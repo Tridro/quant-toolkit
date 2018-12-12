@@ -16,7 +16,7 @@ class Futures_data_sina():
     def __init__(self):
         # self.timeperiod = ['5m', '15m', '30m', '60m', '1d']
         self.commodity_future_code = ['au', 'ag', 'cu', 'al', 'zn', 'pb', 'ni', 'sn', 'rb', 'i', 'hc', 'wr', 'sf', 'sm',
-                                      'fg', 'sp', 'fb', 'bb', 'jm', 'j', 'zc', 'fu', 'sc', 'ru', 'l', 'ta', 'v', 'ma',
+                                      'fg', 'sp', 'fb', 'bb', 'jm', 'j', 'zc', 'fu', 'sc', 'ru', 'l', 'ta', 'v', 'eg', 'ma',
                                       'pp', 'bu', 'c', 'a', 'cs', 'wh', 'ri', 'jr', 'lr', 'b', 'm', 'y', 'rs', 'rm',
                                       'oi', 'p', 'cf', 'sr', 'cy', 'jd', 'ap']
         self.index_future_code = ['if', 'ih', 'ic', 'ts', 'tf', 't']
