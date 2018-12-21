@@ -1,24 +1,30 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 import requests
 import sys
 import time
 import csv
 
 
-class Futures_data_sina():
+class FuturesData_SINA():
     '''
     An API script request data of China's futures market from sina.com
-    Update data: 30/11/2018
+    Update data: 12/21/2018
+
+    Update Information: 1) add headers to mimic web brower request.
 
     request(): request a specific contract data of China's futures markets from sina.com
     show(): form a dataframe like list and display properly..
     output_csv(): output data, create a csv file in working directory with symbol, time period and data acquisition time.
     '''
+
     def __init__(self):
         # self.timeperiod = ['5m', '15m', '30m', '60m', '1d']
         self.commodity_future_code = ['au', 'ag', 'cu', 'al', 'zn', 'pb', 'ni', 'sn', 'rb', 'i', 'hc', 'wr', 'sf', 'sm',
-                                      'fg', 'sp', 'fb', 'bb', 'jm', 'j', 'zc', 'fu', 'sc', 'ru', 'l', 'ta', 'v', 'eg', 'ma',
-                                      'pp', 'bu', 'c', 'a', 'cs', 'wh', 'ri', 'jr', 'lr', 'b', 'm', 'y', 'rs', 'rm',
-                                      'oi', 'p', 'cf', 'sr', 'cy', 'jd', 'ap']
+                                      'fg', 'sp', 'fb', 'bb', 'jm', 'j', 'zc', 'fu', 'sc', 'ru', 'l', 'ta', 'v', 'eg',
+                                      'ma', 'pp', 'bu', 'c', 'a', 'cs', 'wh', 'ri', 'jr', 'lr', 'b', 'm', 'y', 'rs',
+                                      'rm', 'oi', 'p', 'cf', 'sr', 'cy', 'jd', 'ap']
         self.index_future_code = ['if', 'ih', 'ic', 'ts', 'tf', 't']
 
     def request(self, future_code, future_timeperiod):
@@ -28,18 +34,21 @@ class Futures_data_sina():
             self.future_code = future_code
             self.request_time = time.localtime()
 
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) '
+                                     'Chrome/70.0.3538.102 Safari/537.36'}
+
             for code_prefix in self.commodity_future_code:
                 if future_code.find(code_prefix) != -1:
                     if future_timeperiod == '1d':
                         url_str = (
                                 'http://stock2.finance.sina.com.cn/futures/api/json.php/IndexService'
                                 '.getInnerFuturesDailyKLine?symbol=' + future_code)
-                        data = requests.get(url_str)
+                        data = requests.get(url_str, headers=headers)
                     elif future_timeperiod == ('5m' or '15m' or '30m' or '60m'):
                         url_str = (
                                 'http://stock2.finance.sina.com.cn/futures/api/json.php/IndexService'
                                 '.getInnerFuturesMiniKLine' + future_timeperiod + '?symbol=' + future_code)
-                        data = requests.get(url_str)
+                        data = requests.get(url_str, headers=headers)
 
             for code_prefix in self.index_future_code:
                 if future_code.find(code_prefix) != -1:
@@ -47,12 +56,12 @@ class Futures_data_sina():
                         url_str = (
                                 'http://stock2.finance.sina.com.cn/futures/api/json.php/CffexFuturesService'
                                 '.getCffexFuturesDailyKLine?symbol=' + future_code)
-                        data = requests.get(url_str)
+                        data = requests.get(url_str, headers=headers)
                     elif future_timeperiod == ('5m' or '15m' or '30m' or '60m'):
                         url_str = (
                                 'http://stock2.finance.sina.com.cn/futures/api/json.php/CffexFuturesService'
                                 '.getCffexFuturesMiniKLine?' + future_timeperiod + '?symbol=' + future_code)
-                        data = requests.get(url_str)
+                        data = requests.get(url_str, headers=headers)
 
             data_json = data.json()
             self.data_lists = list(data_json)
@@ -86,8 +95,11 @@ class Futures_data_sina():
 
 if __name__ == '__main__':
     # Terminal directly invoking
-    future_code = sys.argv[1]
-    future_timeperiod = sys.argv[2]
-    temp = Futures_data_sina()
-    temp.request(future_code, future_timeperiod)
-    temp.output_csv()
+    try:
+        future_code = sys.argv[1]
+        future_timeperiod = sys.argv[2]
+        temp = FuturesData_SINA()
+        temp.request(future_code, future_timeperiod)
+        temp.output_csv()
+    except IndexError:
+        pass
