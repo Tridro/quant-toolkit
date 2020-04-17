@@ -44,7 +44,7 @@ class FuturesData_SINA():
                                 'http://stock2.finance.sina.com.cn/futures/api/json.php/IndexService'
                                 '.getInnerFuturesDailyKLine?symbol=' + future_code)
                         data = requests.get(url_str, headers=headers)
-                    elif future_timeperiod == ('5m' or '15m' or '30m' or '60m'):
+                    elif future_timeperiod in ['5m', '15m', '30m', '60m']:
                         url_str = (
                                 'http://stock2.finance.sina.com.cn/futures/api/json.php/IndexService'
                                 '.getInnerFuturesMiniKLine' + future_timeperiod + '?symbol=' + future_code)
@@ -57,7 +57,7 @@ class FuturesData_SINA():
                                 'http://stock2.finance.sina.com.cn/futures/api/json.php/CffexFuturesService'
                                 '.getCffexFuturesDailyKLine?symbol=' + future_code)
                         data = requests.get(url_str, headers=headers)
-                    elif future_timeperiod == ('5m' or '15m' or '30m' or '60m'):
+                    elif future_timeperiod in ['5m', '15m', '30m', '60m']:
                         url_str = (
                                 'http://stock2.finance.sina.com.cn/futures/api/json.php/CffexFuturesService'
                                 '.getCffexFuturesMiniKLine?' + future_timeperiod + '?symbol=' + future_code)
