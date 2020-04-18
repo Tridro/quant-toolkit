@@ -1,9 +1,9 @@
 # Tridro量化工具集
 Tridro的量化工具集，方便程序化交易及交易分析工作
-<p align="center">
+<p align="left">
     <img src ="https://img.shields.io/badge/platform-windows|linux|-green.svg" />
     <img src ="https://img.shields.io/badge/python-3.6+-blue.svg" />
-    <img src ="https://img.shields.io/badge/license-Apache-2.0-orange" />
+    <img src ="https://img.shields.io/badge/license-Apache2.0-orange" />
 </p>
 
 ## 期货行情数据源API（新浪）
