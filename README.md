@@ -11,7 +11,12 @@ Tridro的量化工具集，方便程序化交易及交易分析工作
 ## 期货结算单数据分析
 最近更新:2020/4/17
 
-支持直接运行或命令行运行，会在脚本同路径目录生成excel分析结果。
+1. 安装python，并安装所依赖库
+``` {.sourceCode .bash}
+$ pip install pandas openpyxl
+```
+
+2. 直接运行或命令行运行，会在脚本同路径目录生成excel分析结果。
 ``` {.sourceCode .bash}
 $ python 期货结算单数据分析.py -d/--dir <完整结算单文件夹路径/当前路径文件夹名> -i/--id <客户号>
 ```
