@@ -18,5 +18,5 @@ $ pip install pandas openpyxl
 
 * 直接运行或命令行运行，会在脚本同路径目录生成excel分析结果。
 ``` {.sourceCode .bash}
-$ python 期货结算单数据分析.py -d/--dir <完整结算单文件夹路径/当前路径文件夹名> -i/--id <客户号>
+$ python futures_trading_statement_analysis.py -d/--dir <完整结算单文件夹路径/当前路径文件夹名> -i/--id <客户号>
 ```
