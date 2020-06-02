@@ -92,38 +92,33 @@ def data_extract(source, client_id=''):
     print('%.19s 信息：开始客户号 %s 的结算数据提取' % (datetime.now(), client_id))
     account = pd.DataFrame(columns=['日期', '期初结存', '出入金', '平仓盈亏', '持仓盯市盈亏', '手续费', '期末结存',
                                     '客户权益', '保证金占用', '风险度'])
-    date, balance_bf, deposit_withdraw, realized_pl, mtm_pl, commission, balance_cf, client_equity, margin_occupied = [
-        list() for _ in range(9)]
-    for i in range(len(source)):
-        if client_id != re.search(r'[^客户号 ClientID：][0-9]+', source[i][8]).group():
-            input('%.19s 错误： %s 结算单客户号不正确，请检查后重试，按任意键退出！' %
-                  (datetime.now(), re.search(r'[^日期 Date：][0-9][0-9][0-9][0-9][0-9][0-9][0-9]', source[i][10]).group()))
-            raise SystemExit()
-        date.append(re.search(r'[^日期 Date：][0-9][0-9][0-9][0-9][0-9][0-9][0-9]', source[i][10]).group())
-        balance_bf.append(float(source[i][24][17:45].strip()))
-        deposit_withdraw.append(float(source[i][26][25:47].strip()))
-        realized_pl.append(float(source[i][28][18:46].strip()))
-        mtm_pl.append(float(source[i][30][15:44].strip()))
-        commission.append(float(source[i][34][17:46].strip()))
-        balance_cf.append(float(source[i][26][65:-1].strip()))
-        client_equity.append(float(source[i][30][65:-1].strip()))
-        margin_occupied.append(float(source[i][34][70:-1].strip()))
-    account['日期'] = pd.to_datetime(date)
-    account['期初结存'] = balance_bf
-    account['出入金'] = deposit_withdraw
-    account['平仓盈亏'] = realized_pl
-    account['持仓盯市盈亏'] = mtm_pl
-    account['手续费'] = commission
-    account['期末结存'] = balance_cf
-    account['客户权益'] = client_equity
-    account['保证金占用'] = margin_occupied
-    account['风险度'] = account['保证金占用'] / account['客户权益']
-
-    sep = re.compile(r'[\|\s|]+')
-
     transaction_record = pd.DataFrame(columns=['成交日期', '交易所', '品种', '合约', '买/卖', '投/保', '成交价', '手数',
                                                '成交额', '开/平', '手续费', '平仓盈亏', '权利金收支', '成交序号'])
+    position_closed = pd.DataFrame(columns=['平仓日期', '交易所', '品种', '合约', '开仓日期', '买/卖', '手数', '开仓价',
+                                            '昨结算', '成交价', '平仓盈亏', '权利金收支', '交易盈亏', '盈亏率'])
+    sep = re.compile(r'[\|\s|]+')
+
     for i in range(len(source)):
+        if client_id != re.search(r'[^客户号 ClientID：][0-9]+', source[i][8]).group():
+            input('%.19s 错误： %s 结算单客户号不正确，请检查后重试，按任意键退出！\n' %
+                  (datetime.now(), re.search(r'[^日期 Date：][0-9][0-9][0-9][0-9][0-9][0-9][0-9]', source[i][10]).group()))
+            raise SystemExit()
+        for j in range(len(source[i])):
+            if re.match(r'\s*资金状况', source[i][j]):
+                date = re.search(r'[^日期 Date：][0-9][0-9][0-9][0-9][0-9][0-9][0-9]', source[i][10]).group()
+                balance_bf = float(source[i][j+4][17:45].strip())
+                deposit_withdraw = float(source[i][j+6][25:47].strip())
+                realized_pl = float(source[i][j+8][18:46].strip())
+                mtm_pl = float(source[i][j+10][15:44].strip())
+                commission = float(source[i][j+14][17:46].strip())
+                balance_cf = float(source[i][j+6][65:-1].strip())
+                client_equity = float(source[i][j+10][65:-1].strip())
+                margin_occupied = float(source[i][j+14][70:-1].strip())
+                data = {'日期': pd.to_datetime(date), '期初结存': balance_bf, '出入金': deposit_withdraw,
+                        '平仓盈亏': realized_pl, '持仓盯市盈亏': mtm_pl, '手续费': commission, '期末结存': balance_cf,
+                        '客户权益': client_equity, '保证金占用': margin_occupied, '风险度': margin_occupied / client_equity}
+                ser = pd.Series(data)
+                account = account.append([ser], ignore_index=True)
         for j in range(len(source[i])):
             if re.match(r'\s*成交记录 Transaction Record', source[i][j]):
                 for l in range(j + 10, len(source[i])):
@@ -138,10 +133,6 @@ def data_extract(source, client_id=''):
                             '平仓盈亏': [float(row[12])], '权利金收支': [float(row[13])], '成交序号': [int(row[14])]}
                     df = pd.DataFrame(data)
                     transaction_record = transaction_record.append(df)
-
-    position_closed = pd.DataFrame(columns=['平仓日期', '交易所', '品种', '合约', '开仓日期', '买/卖', '手数', '开仓价',
-                                            '昨结算', '成交价', '平仓盈亏', '权利金收支', '交易盈亏', '盈亏率'])
-    for i in range(len(source)):
         for j in range(len(source[i])):
             if re.match(r'\s*平仓明细 Position Closed', source[i][j]):
                 for l in range(j + 10, len(source[i])):
@@ -161,6 +152,8 @@ def data_extract(source, client_id=''):
                             }
                     df = pd.DataFrame(data)
                     position_closed = position_closed.append(df)
+
+    print('\n%.19s 信息：所有结算单数据已提取\n' % datetime.now())
 
     return client_id, account, transaction_record, position_closed
 
