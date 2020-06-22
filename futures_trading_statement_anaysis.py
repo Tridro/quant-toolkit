@@ -31,7 +31,7 @@ CONTRACT_CODE = {'if': '沪深300股指', 'ih': '上证50股指', 'ic': '中证5
                  'rb': '螺纹钢', 'i': '铁矿石', 'hc': '热轧卷板', 'sf': '硅铁', 'sm': '锰硅', 'fg': '玻璃', 'ss': '不锈钢',
                  'wr': '线材', 'ru': '天然橡胶', 'sp': '漂针浆', 'bb': '细木工板', 'fb': '中密度纤维板', 'nr': '20号胶',
                  'fu': '燃料油', 'bu': '石油沥青', 'l': '线型低密度聚乙烯', 'pp': '聚丙烯', 'v': '聚氯乙烯', 'ta': '化纤',
-                 'ma': '甲醇MA', 'eg': '乙二醇', 'eb': '苯乙烯', 'ur': '尿素', 'sa': '纯碱', 'pg': '液化石油气',
+                 'ma': '甲醇MA', 'eg': '乙二醇', 'eb': '苯乙烯', 'ur': '尿素', 'sa': '纯碱', 'pg': '液化石油气', 'lu': '低硫燃料油',
                  'm': '豆粕', 'y': '豆油', 'oi': '菜籽油', 'a': '黄大豆1号', 'b': '黄大豆2号', 'p': '棕榈油', 'c': '黄玉米',
                  'rm': '菜籽粕', 'cs': '玉米淀粉',
                  'cf': '一号棉花', 'cy': '棉纱', 'sr': '白砂糖', 'wh': '强筋小麦', 'ri': '旱籼稻', 'rr': '粳米',
@@ -44,7 +44,7 @@ TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'tf': 10000, 't': 10000, 'ts': 
                 'ta': 5, 'ma': 10, 'sp': 10, 'm': 10, 'y': 10, 'oi': 10, 'a': 10, 'b': 10, 'p': 10, 'c': 10, 'rm': 10,
                 'cs': 10, 'jd': 10, 'bb': 500, 'fb': 500, 'cf': 5, 'cy': 5, 'sr': 10, 'wh': 20, 'ri': 20, 'jr': 20,
                 'lr': 20, 'fg': 20, 'ss': 5, 'nr': 10, 'eg': 10, 'eb': 5, 'ur': 20, 'rr': 10, 'rs': 10, 'ap': 10,
-                'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, }
+                'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10}
 
 
 # ---------------------------------------------------- 基础数据 结束 ----------------------------------------------------
@@ -301,62 +301,3 @@ def excel_create_chart(excel_file):
     chart5.set_categories(labels)
     trading_win_and_loss_chart_sheet.add_chart(chart5)
     # 图表保存
-    wb.save(excel_file)
-    wb.close()
-
-
-# ---------------------------------------------------- 生成图表 结束 ----------------------------------------------------
-
-
-# -------------------------------------------------- 生成excel文件 开始 -------------------------------------------------
-def output_excel(account, transaction_record, position_closed, contracts_analysis, categories_analysis, client_id=''):
-    try:
-        excel_file_name = '%s%s%s交易统计.xlsx' % (BASE_DIR, '\\' if sys.platform == 'win32' else '/', client_id)
-        with pd.ExcelWriter(excel_file_name) as writer:
-            account.to_excel(writer, sheet_name='账户统计', encoding='ansi', index=None)
-            transaction_record.to_excel(writer, sheet_name='交易记录', encoding='ansi', index=None)
-            position_closed.to_excel(writer, sheet_name='平仓明细', encoding='ansi', index=None)
-            contracts_analysis.to_excel(writer, sheet_name='交易分析(按合约)', encoding='ansi', index=None)
-            categories_analysis.to_excel(writer, sheet_name='交易分析(按品种)', encoding='ansi', index=None)
-        excel_data_format(excel_file_name)
-        print('%.19s 信息：Excel分析结果已生成' % datetime.now())
-        excel_create_chart(excel_file_name)
-        input('%.19s 信息：Excel分析图表已生成' % datetime.now())
-    except PermissionError:
-        input('%.19s 错误：分析结果写入被拒绝，请检查文件是否已打开，按任意键退出！' % datetime.now())
-        raise SystemExit()
-
-
-# -------------------------------------------------- 生成excel文件 结束 -------------------------------------------------
-
-
-# ---------------------------------------------------- 终端命令 开始 ----------------------------------------------------
-def main(argv):
-    client_id = ''
-    files_folder = ''
-    try:
-        opts, args = getopt.getopt(argv, "hd:i:", ["dir=", "id="])
-    except getopt.GetoptError:
-        print('参数选项:\n-d/--dir <settlement statement files\' folder  结算单文件夹路径>\n-i/--id <client id  客户号>')
-        sys.exit(2)
-    if len(opts) != 0:
-        for opt, arg in opts:
-            if opt == '-h':
-                print('参数选项:\n-d/--dir <settlement statement files\' folder  结算单文件夹路径>\n-i/--id <client id  客户号>')
-                sys.exit()
-            elif opt in ("-d", "--dir"):
-                files_folder = arg
-            elif opt in ("-i", "--id"):
-                client_id = arg
-    files_folder_name, statement_list = read_statement_files(files_folder)
-    print('%.19s 信息：已读取 %s 文件夹' % (datetime.now(), files_folder_name))
-    client_id, account, transaction_record, position_closed = data_extract(statement_list, client_id=client_id)
-    print('%.19s 信息：所有结算单数据已提取' % datetime.now())
-    contracts_analysis, categories_analysis = data_statistic(transaction_record, position_closed)
-    output_excel(account, transaction_record, position_closed, contracts_analysis, categories_analysis,
-                 client_id=client_id)
-
-
-if __name__ == '__main__':
-    main(sys.argv[1:])
-# ---------------------------------------------------- 终端命令 结束 ----------------------------------------------------
