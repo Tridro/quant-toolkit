@@ -301,3 +301,62 @@ def excel_create_chart(excel_file):
     chart5.set_categories(labels)
     trading_win_and_loss_chart_sheet.add_chart(chart5)
     # 图表保存
+    wb.save(excel_file)
+    wb.close()
+    # 输出信息
+    print('%.19s 信息：Excel分析图表已生成' % datetime.now())
+
+
+# ---------------------------------------------------- 生成图表 结束 ----------------------------------------------------
+
+
+# -------------------------------------------------- 生成excel文件 开始 -------------------------------------------------
+def output_excel(account, transaction_record, position_closed, contracts_analysis, categories_analysis, client_id=''):
+    try:
+        excel_file_name = '%s%s%s交易统计.xlsx' % (BASE_DIR, '\\' if sys.platform == 'win32' else '/', client_id)
+        with pd.ExcelWriter(excel_file_name) as writer:
+            account.to_excel(writer, sheet_name='账户统计', encoding='ansi', index=None)
+            transaction_record.to_excel(writer, sheet_name='交易记录', encoding='ansi', index=None)
+            position_closed.to_excel(writer, sheet_name='平仓明细', encoding='ansi', index=None)
+            contracts_analysis.to_excel(writer, sheet_name='交易分析(按合约)', encoding='ansi', index=None)
+            categories_analysis.to_excel(writer, sheet_name='交易分析(按品种)', encoding='ansi', index=None)
+        excel_data_format(excel_file_name)
+        excel_create_chart(excel_file_name)
+        input('%.19s 信息：任务结束，感谢您的使用，按任意键退出！\n' % datetime.now())
+        raise SystemExit()
+    except PermissionError:
+        input('%.19s 错误：分析结果写入被拒绝，请检查文件是否已打开，按任意键退出！\n' % datetime.now())
+        raise SystemExit()
+
+
+# -------------------------------------------------- 生成excel文件 结束 -------------------------------------------------
+
+
+# ---------------------------------------------------- 终端命令 开始 ----------------------------------------------------
+def main(argv):
+    client_id = ''
+    files_folder = ''
+    try:
+        opts, args = getopt.getopt(argv, "hd:i:", ["dir=", "id="])
+    except getopt.GetoptError:
+        print('参数选项:\n-d/--dir <settlement statement files\' folder  结算单文件夹路径>\n-i/--id <client id  客户号>')
+        sys.exit(2)
+    if len(opts) != 0:
+        for opt, arg in opts:
+            if opt == '-h':
+                print('参数选项:\n-d/--dir <settlement statement files\' folder  结算单文件夹路径>\n-i/--id <client id  客户号>')
+                sys.exit()
+            elif opt in ("-d", "--dir"):
+                files_folder = arg
+            elif opt in ("-i", "--id"):
+                client_id = arg
+    statement_list = read_statement_files(files_folder)
+    client_id, account, transaction_record, position_closed = data_extract(statement_list, client_id=client_id)
+    contracts_analysis, categories_analysis = data_statistic(transaction_record, position_closed)
+    output_excel(account, transaction_record, position_closed, contracts_analysis, categories_analysis,
+                 client_id=client_id)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
+# ---------------------------------------------------- 终端命令 结束 ----------------------------------------------------
