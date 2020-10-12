@@ -2,15 +2,17 @@
 Tridro的量化工具集，方便程序化交易及交易分析工作
 <p align="left">
     <img src ="https://img.shields.io/badge/platform-windows|linux|-green.svg" />
-    <img src ="https://img.shields.io/badge/python-3.6+-blue.svg" />
+    <img src ="https://img.shields.io/badge/python-3.7+-blue.svg" />
     <img src ="https://img.shields.io/badge/license-Apache2.0-orange" />
 </p>
 
 ## 期货行情数据源API（新浪）
   
 ## 期货结算单数据分析
-最近更新: 2020/6/22  
-更新内容: 1) 增加期货新品种代码
+最近更新: 2020/10/12  
+更新内容: 1）基础数据更新，增加新品种代码短纤PT
+          2）增加净值化计算以及图表化功能
+          3）优化统计算法
 
 * 安装python，并安装所依赖库
 ``` {.sourceCode .bash}
