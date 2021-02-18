@@ -12,9 +12,12 @@ import os.path
 import re
 import sys
 from datetime import datetime
+from itertools import islice
 
 import pandas as pd
 from openpyxl import load_workbook
+from openpyxl.utils import get_column_interval
+from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import numbers
 from openpyxl.chart import Reference, LineChart, PieChart, BarChart, RadarChart
 from openpyxl.chart.axis import NumericAxis, TextAxis
@@ -35,7 +38,7 @@ CONTRACT_CODE = {'if': '沪深300股指', 'ih': '上证50股指', 'ic': '中证5
                  'rm': '菜籽粕', 'cs': '玉米淀粉',
                  'cf': '一号棉花', 'cy': '棉纱', 'sr': '白砂糖', 'wh': '强筋小麦', 'ri': '旱籼稻', 'rr': '粳米',
                  'rs': '油菜籽', 'jr': '粳稻谷', 'lr': '晚籼稻', 'pm': '普通小麦', 'sc': '原油',
-                 'ap': '鲜苹果', 'jd': '鲜鸡蛋', 'cj': '干制红枣', 'pf': '短纤', 'bc': '国际铜', 'lh': '生猪'}
+                 'ap': '鲜苹果', 'jd': '鲜鸡蛋', 'cj': '干制红枣', 'pf': '短纤', 'bc': '国际铜', 'lh': '生猪', 'pk': '花生'}
 
 TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'tf': 10000, 't': 10000, 'ts': 20000, 'cu': 5, 'al': 5, 'zn': 5,
                 'sc': 1000, 'pb': 5, 'ni': 1, 'sn': 1, 'au': 1000, 'ag': 15, 'j': 100, 'jm': 60, 'zc': 100, 'rb': 10,
@@ -43,7 +46,7 @@ TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'tf': 10000, 't': 10000, 'ts': 
                 'ta': 5, 'ma': 10, 'sp': 10, 'm': 10, 'y': 10, 'oi': 10, 'a': 10, 'b': 10, 'p': 10, 'c': 10, 'rm': 10,
                 'cs': 10, 'jd': 10, 'bb': 500, 'fb': 500, 'cf': 5, 'cy': 5, 'sr': 10, 'wh': 20, 'ri': 20, 'jr': 20,
                 'lr': 20, 'fg': 20, 'ss': 5, 'nr': 10, 'eg': 10, 'eb': 5, 'ur': 20, 'rr': 10, 'rs': 10, 'ap': 10,
-                'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10, 'pf': 5, 'bc': 5, 'lh': 16}
+                'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10, 'pf': 5, 'bc': 5, 'lh': 16, 'pk': 5}
 
 
 # ---------------------------------------------------- 基础数据 结束 ----------------------------------------------------
@@ -78,7 +81,7 @@ def read_statement_files(dir_input=''):
         if os.path.isfile(file_dir):
             with open(file_dir) as f:
                 statement_data_list.append(f.readlines())
-    print('\n%.19s 信息：已读取 %s 文件夹' % (datetime.now(), folder_name))
+    print(f'\n{datetime.now()} | 信息 | 已读取 {folder_name} 文件夹')
     return statement_data_list
 
 
@@ -89,7 +92,7 @@ def read_statement_files(dir_input=''):
 def data_extract(source, client_id=''):
     if client_id == '':
         client_id = re.search(r'[^客户号 ClientID：][0-9]+', source[0][8]).group()
-    print('%.19s 信息：开始客户号 %s 的结算数据提取' % (datetime.now(), client_id))
+    print(f'{datetime.now()} | 信息 | 开始客户号 {client_id} 的结算数据提取')
     account = pd.DataFrame(columns=['日期', '期初结存', '出入金', '平仓盈亏', '持仓盯市盈亏', '手续费', '期末结存',
                                     '客户权益', '保证金占用', '风险度'])
     transaction_record = pd.DataFrame(columns=['成交日期', '交易所', '品种', '合约', '买/卖', '投/保', '成交价', '手数',
@@ -100,8 +103,9 @@ def data_extract(source, client_id=''):
 
     for i in range(len(source)):
         if client_id != re.search(r'[^客户号 ClientID：][0-9]+', source[i][8]).group():
-            input('%.19s 错误： %s 结算单客户号不正确，请检查后重试，按任意键退出！\n' %
-                  (datetime.now(), re.search(r'[^日期 Date：][0-9][0-9][0-9][0-9][0-9][0-9][0-9]', source[i][10]).group()))
+            input(f"{datetime.now()} | 错误 | "
+                  f"{re.search(r'[^日期 Date：][0-9][0-9][0-9][0-9][0-9][0-9][0-9]', source[i][10]).group()} "
+                  f"结算单客户号不正确, 请检查后重试, 按任意键退出!\n")
             raise SystemExit()
         for j in range(len(source[i])):
             if re.match(r'\s*资金状况', source[i][j]):
@@ -152,7 +156,7 @@ def data_extract(source, client_id=''):
                             }
                     df = pd.DataFrame(data)
                     position_closed = position_closed.append(df)
-    print('%.19s 信息：已提取所有结算单数据' % datetime.now())
+    print(f'{datetime.now()} | 信息 | 已提取所有结算单数据')
 
     return client_id, account, transaction_record, position_closed
 
@@ -162,7 +166,7 @@ def data_extract(source, client_id=''):
 
 # ---------------------------------------------------- 数据统计 开始 ----------------------------------------------------
 def net_worth_calc(account):
-    print('%.19s 信息：开始净值化处理' % datetime.now())
+    print(f'{datetime.now()} | 信息 | 开始净值化处理')
     net_worth = pd.DataFrame(columns=['日期', '总权益', '净值', '份额', '份额变动'])
     net_worth['日期'] = account['日期']
     df = pd.merge(account, net_worth, on=['日期'])
@@ -183,53 +187,96 @@ def net_worth_calc(account):
         df.loc[index, '净值'] = df.iloc[index]['总权益'] / df.iloc[index]['份额']
     df['份额变动'].fillna(0, inplace=True)
     net_worth = pd.DataFrame(df, columns=net_worth.columns)
-    print('%.19s 信息：已完成净值化处理' % datetime.now())
+    print(f'{datetime.now()} | 信息 | 已完成净值化处理')
     return net_worth
 
 
 def data_statistic(transaction_record, position_closed):
-    print('%.19s 信息：开始数据统计' % datetime.now())
-    contracts_analysis = pd.DataFrame(columns=['品种', '合约', '合约平仓盈亏', '合约净盈亏', '交易次数', '交易手数',
-                                               '盈利次数', '盈利手数', '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏',
-                                               '成交额'])
-    contracts_analysis['合约'] = position_closed.groupby('合约').groups
-    contracts_analysis = contracts_analysis.set_index('合约')
-    for index in contracts_analysis.index:
-        contracts_analysis.loc[index]['品种'] = CONTRACT_CODE[re.sub(r'[^A-Za-z]', '', index).lower()]
+    print(f'{datetime.now()} | 信息 | 开始数据统计')
+    statistic_by_contracts = pd.DataFrame(columns=['品种', '合约', '平仓盈亏', '净利润', '交易次数', '交易手数', '盈利次数',
+                                                   '盈利手数', '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '成交额'])
+    statistic_by_contracts['合约'] = position_closed.groupby('合约').groups
+    statistic_by_contracts = statistic_by_contracts.set_index('合约')
+    for index in statistic_by_contracts.index:
+        statistic_by_contracts.loc[index]['品种'] = CONTRACT_CODE[re.sub(r'[^A-Za-z]', '', index).lower()]
     position_closed_group_by_contracts = position_closed.groupby('合约')
-    contracts_analysis['合约平仓盈亏'] = position_closed_group_by_contracts['交易盈亏'].sum()
-    contracts_analysis['合约净盈亏'] = position_closed_group_by_contracts['交易盈亏'].sum() - transaction_record.groupby('合约')[
-        '手续费'].sum()
-    contracts_analysis['交易次数'] = position_closed_group_by_contracts.count()
-    contracts_analysis['交易手数'] = position_closed_group_by_contracts['手数'].sum()
-    contracts_analysis['盈利次数'] = position_closed_group_by_contracts.apply(lambda x: sum(x['交易盈亏'] > 0))
-    contracts_analysis['盈利手数'] = position_closed_group_by_contracts.apply(lambda x: sum(x[x['交易盈亏'] > 0]['手数']))
-    contracts_analysis['交易成功率'] = round(contracts_analysis['盈利次数'] / contracts_analysis['交易次数'], 4)
-    contracts_analysis['交易盈亏率'] = round(contracts_analysis['盈利手数'] / contracts_analysis['交易手数'], 4)
-    contracts_analysis['均次盈亏'] = round(contracts_analysis['合约平仓盈亏'] / contracts_analysis['交易次数'], 2)
-    contracts_analysis['均手盈亏'] = round(contracts_analysis['合约平仓盈亏'] / contracts_analysis['交易手数'], 2)
-    contracts_analysis['成交额'] = transaction_record.groupby('合约')['成交额'].sum()
-    contracts_analysis = contracts_analysis.reset_index()
+    statistic_by_contracts['平仓盈亏'] = position_closed_group_by_contracts['交易盈亏'].sum()
+    statistic_by_contracts['净利润'] = position_closed_group_by_contracts['交易盈亏'].sum() - transaction_record.groupby('合约')['手续费'].sum()
+    statistic_by_contracts['交易次数'] = position_closed_group_by_contracts.count()
+    statistic_by_contracts['交易手数'] = position_closed_group_by_contracts['手数'].sum()
+    statistic_by_contracts['盈利次数'] = position_closed_group_by_contracts.apply(lambda x: sum(x['交易盈亏'] > 0))
+    statistic_by_contracts['盈利手数'] = position_closed_group_by_contracts.apply(lambda x: sum(x[x['交易盈亏'] > 0]['手数']))
+    statistic_by_contracts['交易成功率'] = round(statistic_by_contracts['盈利次数'] / statistic_by_contracts['交易次数'], 4)
+    statistic_by_contracts['交易盈亏率'] = round(statistic_by_contracts['盈利手数'] / statistic_by_contracts['交易手数'], 4)
+    statistic_by_contracts['均次盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易次数'], 2)
+    statistic_by_contracts['均手盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易手数'], 2)
+    statistic_by_contracts['成交额'] = transaction_record.groupby('合约')['成交额'].sum()
+    statistic_by_contracts = statistic_by_contracts.reset_index()
 
-    categories_analysis = pd.DataFrame(columns=['品种', '品种平仓盈亏', '品种净盈亏', '交易次数', '交易手数', '盈利次数',
-                                                '盈利手数', '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '成交额'])
-    categories_analysis['品种'] = contracts_analysis.groupby('品种').groups
-    categories_analysis = categories_analysis.set_index('品种')
-    contracts_analysis_group_by_categories = contracts_analysis.groupby('品种')
-    categories_analysis['品种平仓盈亏'] = contracts_analysis_group_by_categories['合约平仓盈亏'].sum()
-    categories_analysis['品种净盈亏'] = contracts_analysis_group_by_categories['合约净盈亏'].sum()
-    categories_analysis['交易次数'] = contracts_analysis_group_by_categories['交易次数'].sum()
-    categories_analysis['交易手数'] = contracts_analysis_group_by_categories['交易手数'].sum()
-    categories_analysis['盈利次数'] = contracts_analysis_group_by_categories['盈利次数'].sum()
-    categories_analysis['盈利手数'] = contracts_analysis_group_by_categories['盈利手数'].sum()
-    categories_analysis['交易成功率'] = round(categories_analysis['盈利次数'] / categories_analysis['交易次数'], 4)
-    categories_analysis['交易盈亏率'] = round(categories_analysis['盈利手数'] / categories_analysis['交易手数'], 4)
-    categories_analysis['均次盈亏'] = round(categories_analysis['品种平仓盈亏'] / categories_analysis['交易次数'], 2)
-    categories_analysis['均手盈亏'] = round(categories_analysis['品种平仓盈亏'] / categories_analysis['交易手数'], 2)
-    categories_analysis['成交额'] = contracts_analysis_group_by_categories['成交额'].sum()
-    categories_analysis = categories_analysis.reset_index()
-    print('%.19s 信息：已完成数据统计' % datetime.now())
-    return contracts_analysis, categories_analysis
+    statistic_by_categories = pd.DataFrame(columns=['品种', '平仓盈亏', '净利润', '交易次数', '交易手数', '盈利次数', '盈利手数',
+                                                    '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '成交额'])
+    contracts_analysis_group_by_categories = statistic_by_contracts.groupby('品种')
+    statistic_by_categories['品种'] = contracts_analysis_group_by_categories.groups
+    statistic_by_categories = statistic_by_categories.set_index('品种')
+    statistic_by_categories['平仓盈亏'] = contracts_analysis_group_by_categories['平仓盈亏'].sum()
+    statistic_by_categories['净利润'] = contracts_analysis_group_by_categories['净利润'].sum()
+    statistic_by_categories['交易次数'] = contracts_analysis_group_by_categories['交易次数'].sum()
+    statistic_by_categories['交易手数'] = contracts_analysis_group_by_categories['交易手数'].sum()
+    statistic_by_categories['盈利次数'] = contracts_analysis_group_by_categories['盈利次数'].sum()
+    statistic_by_categories['盈利手数'] = contracts_analysis_group_by_categories['盈利手数'].sum()
+    statistic_by_categories['交易成功率'] = round(statistic_by_categories['盈利次数'] / statistic_by_categories['交易次数'], 4)
+    statistic_by_categories['交易盈亏率'] = round(statistic_by_categories['盈利手数'] / statistic_by_categories['交易手数'], 4)
+    statistic_by_categories['均次盈亏'] = round(statistic_by_categories['平仓盈亏'] / statistic_by_categories['交易次数'], 2)
+    statistic_by_categories['均手盈亏'] = round(statistic_by_categories['平仓盈亏'] / statistic_by_categories['交易手数'], 2)
+    statistic_by_categories['成交额'] = contracts_analysis_group_by_categories['成交额'].sum()
+    statistic_by_categories = statistic_by_categories.reset_index()
+
+    statistic_by_trade_direction = pd.DataFrame(columns=['统计指标', '总盈利', '总亏损', '总盈利/总亏损', '手续费', '净利润',
+                                                         '盈利比率', '盈利手数', '亏损手数', '持平手数', '平均盈利', '平均亏损',
+                                                         '平均盈利/平均亏损', '平均手续费', '平均净利润', '最大盈利', '最大亏损',
+                                                         '最大盈利/总盈利', '最大亏损/总亏损', '净利润/最大亏损'])
+    position_closed_group_by_trade_direction = position_closed.groupby('买/卖')
+    statistic_by_trade_direction['统计指标'] = position_closed_group_by_trade_direction.groups
+    statistic_by_trade_direction = statistic_by_trade_direction.set_index('统计指标')
+    statistic_by_trade_direction['总盈利'] = position_closed_group_by_trade_direction.apply(
+        lambda x: sum(x[x['交易盈亏'] > 0]['交易盈亏']))
+    statistic_by_trade_direction['总亏损'] = position_closed_group_by_trade_direction.apply(
+        lambda x: sum(x[x['交易盈亏'] < 0]['交易盈亏']))
+    statistic_by_trade_direction['总盈利/总亏损'] = round(
+        abs(statistic_by_trade_direction['总盈利'] / statistic_by_trade_direction['总亏损']), 4)
+    statistic_by_trade_direction['手续费'] = transaction_record.groupby('买/卖')['手续费'].sum()
+    statistic_by_trade_direction['净利润'] = statistic_by_trade_direction['总盈利'] + statistic_by_trade_direction['总亏损'] - transaction_record.groupby('买/卖')['手续费'].sum()
+    statistic_by_trade_direction['盈利手数'] = position_closed_group_by_trade_direction.apply(
+        lambda x: sum(x[x['交易盈亏'] > 0]['手数']))
+    statistic_by_trade_direction['亏损手数'] = position_closed_group_by_trade_direction.apply(
+        lambda x: sum(x[x['交易盈亏'] < 0]['手数']))
+    statistic_by_trade_direction['持平手数'] = position_closed_group_by_trade_direction.apply(
+        lambda x: sum(x[x['交易盈亏'] == 0]['手数']))
+    statistic_by_trade_direction['盈利比率'] = round(statistic_by_trade_direction['盈利手数'] / (
+                statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
+                statistic_by_trade_direction['持平手数']), 4)
+    statistic_by_trade_direction['平均盈利'] = round(
+        statistic_by_trade_direction['总盈利'] / statistic_by_trade_direction['盈利手数'], 2)
+    statistic_by_trade_direction['平均亏损'] = round(
+        statistic_by_trade_direction['总亏损'] / statistic_by_trade_direction['亏损手数'], 2)
+    statistic_by_trade_direction['平均盈利/平均亏损'] = round(
+        abs(statistic_by_trade_direction['平均盈利'] / statistic_by_trade_direction['平均亏损']), 4)
+    statistic_by_trade_direction['平均手续费'] = round(statistic_by_trade_direction['手续费'] / (
+                statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
+                statistic_by_trade_direction['持平手数']), 2)
+    statistic_by_trade_direction['平均净利润'] = statistic_by_trade_direction['平均盈利'] + statistic_by_trade_direction[
+        '平均亏损'] - statistic_by_trade_direction['平均手续费']
+    statistic_by_trade_direction['最大盈利'] = position_closed_group_by_trade_direction['交易盈亏'].max()
+    statistic_by_trade_direction['最大亏损'] = position_closed_group_by_trade_direction['交易盈亏'].min()
+    statistic_by_trade_direction['最大盈利/总盈利'] = round(
+        statistic_by_trade_direction['最大盈利'] / statistic_by_trade_direction['总盈利'], 4)
+    statistic_by_trade_direction['最大亏损/总亏损'] = round(
+        statistic_by_trade_direction['最大亏损'] / statistic_by_trade_direction['总亏损'], 4)
+    statistic_by_trade_direction['净利润/最大亏损'] = round(
+        abs(statistic_by_trade_direction['净利润'] / statistic_by_trade_direction['最大亏损']), 4)
+    statistic_by_trade_direction = statistic_by_trade_direction.reset_index()
+    print(f'{datetime.now()} | 信息 | 已完成数据统计')
+    return statistic_by_contracts, statistic_by_categories, statistic_by_trade_direction
 
 
 # ---------------------------------------------------- 数据统计 结束 ----------------------------------------------------
@@ -237,30 +284,96 @@ def data_statistic(transaction_record, position_closed):
 
 # --------------------------------------------------- 数据格式化 开始 ---------------------------------------------------
 def excel_data_format(excel_file):
+    def cell_format_by_columns(worksheet):
+        """
+        单元格根据列表头格式化
+        :param worksheet:
+        :return:
+        """
+        for column_dataset in worksheet.columns:
+            header = column_dataset[0].value
+            for row_index in range(worksheet.min_row, worksheet.max_row):
+                if '日期' in header:
+                    column_dataset[row_index].number_format = numbers.FORMAT_DATE_YYYYMMDD2
+                elif '风险度' in header or '率' in header or '/' in header:
+                    column_dataset[row_index].number_format = numbers.FORMAT_PERCENTAGE_00
+                elif '利润' in header or '盈亏' in header or '结存' in header or '权益' in header or '保证金' in header \
+                        or '出入金' in header or '成交额' in header:
+                    column_dataset[row_index].number_format = numbers.BUILTIN_FORMATS[39]
+
+    def cell_format_by_rows(worksheet):
+        """
+        单元格根据行表头格式化
+        :param worksheet:
+        :return:
+        """
+        for row_dataset in worksheet.rows:
+            header = row_dataset[0].value
+            for column_index in range(worksheet.min_column, worksheet.max_column):
+                if '日期' in header:
+                    row_dataset[column_index].number_format = numbers.FORMAT_DATE_YYYYMMDD2
+                elif '风险度' in header or '率' in header or '/' in header:
+                    row_dataset[column_index].number_format = numbers.FORMAT_PERCENTAGE_00
+                elif '利润' in header or '盈亏' in header or '结存' in header or '权益' in header or '保证金' in header \
+                        or '出入金' in header or '成交额' in header:
+                    row_dataset[column_index].number_format = numbers.BUILTIN_FORMATS[39]
+
+    def dimension_format(worksheet, dimension='columns'):
+        """
+        行列格式化
+        :param worksheet:
+        :param dimension:
+        :return:
+        """
+        if dimension == 'columns':
+            for column_index in get_column_interval(worksheet.min_column, worksheet.max_column):
+                worksheet.column_dimensions[column_index].auto_size = True
+                worksheet.column_dimensions[column_index].best_fit = True
+        elif dimension == 'rows':
+            for row_index in range(worksheet.min_row, worksheet.max_row):
+                pass
+
+    def data_transposition(workbook, sheet_name, index=False):
+        """
+        数据转置
+        :param workbook:
+        :param sheet_name:
+        :param index:
+        :return:
+        """
+        data = workbook[sheet_name].values
+        if index is True:
+            cols = next(data)[1:]
+            data = list(data)
+            index = [r[0] for r in data]
+            data = (islice(r, 1, None) for r in data)
+        else:
+            cols = next(data)[0:]
+            data = list(data)
+            index = None
+            data = (islice(r, 0, None) for r in data)
+        df = pd.DataFrame(data, index=index, columns=cols).T
+        df.reset_index(level=0, inplace=True)
+        idx = workbook.sheetnames.index(sheet_name)
+        workbook.remove(workbook.worksheets[idx])
+        workbook.create_sheet(sheet_name, idx)
+        for r in dataframe_to_rows(df, index=index, header=None):
+            workbook[sheet_name].append(r)
+        for cell in workbook[sheet_name]['A']:
+            cell.style = 'Pandas'
+
     wb = load_workbook(excel_file)
-    print('%.19s 信息：开始Excel数据格式化' % datetime.now())
-    for ws in wb:
-        for column_index in [chr(i) for i in range(65, 65 + ws.max_column)]:
-            ws.column_dimensions[column_index].auto_size = True
-        for data_set in ws.columns:
-            header = data_set[0].value
-            if '日期' in header:
-                for i in range(ws.min_row, ws.max_row):
-                    data_set[i].number_format = numbers.FORMAT_DATE_YYYYMMDD2
-            elif '风险度' in header:
-                for i in range(ws.min_row, ws.max_row):
-                    data_set[i].number_format = numbers.FORMAT_PERCENTAGE_00
-            elif '盈亏率' in header or '成功率' in header:
-                for i in range(ws.min_row, ws.max_row):
-                    data_set[i].number_format = numbers.FORMAT_PERCENTAGE_00
-            elif '盈亏' in header or '结存' in header or '权益' in header or '保证金' in header or '出入金' in header \
-                    or '成交额' in header:
-                for i in range(ws.min_row, ws.max_row):
-                    data_set[i].number_format = numbers.BUILTIN_FORMATS[39]
+    print(f'{datetime.now()} | 信息 | 开始Excel数据格式化')
+    for ws_name in wb.sheetnames:
+        cell_format_by_columns(wb[ws_name])
+        dimension_format(wb[ws_name])
+        if ws_name == '交易分析(按买卖)':
+            data_transposition(wb, '交易分析(按买卖)')
+            cell_format_by_rows(wb[ws_name])
+            dimension_format(wb[ws_name])
     wb.save(excel_file)
     wb.close()
-
-    print('%.19s 信息：已生成Excel数据表' % datetime.now())
+    print(f'{datetime.now()} | 信息 | 已生成Excel数据表')
 
 
 # --------------------------------------------------- 数据格式化 结束 ---------------------------------------------------
@@ -274,7 +387,7 @@ def excel_create_chart(excel_file):
     :return:
     """
     wb = load_workbook(excel_file)
-    print('%.19s 信息：开始Excel图表渲染' % datetime.now())
+    print(f'{datetime.now()} | 信息 | 开始Excel图表渲染')
     # 进行净值走势图渲染
     net_worth_sheet = wb['账户净值']
     net_worth_chart_sheet = wb.create_chartsheet(title='净值走势图')
@@ -350,7 +463,7 @@ def excel_create_chart(excel_file):
     wb.save(excel_file)
     wb.close()
     # 输出信息
-    print('%.19s 信息：已生成Excel图表' % datetime.now())
+    print(f'{datetime.now()} | 信息 | 已生成Excel图表')
 
 
 # ---------------------------------------------------- 生成图表 结束 ----------------------------------------------------
@@ -358,22 +471,23 @@ def excel_create_chart(excel_file):
 
 # -------------------------------------------------- 生成excel文件 开始 -------------------------------------------------
 def output_excel(net_worth, account, transaction_record, position_closed, contracts_analysis, categories_analysis,
-                 client_id=''):
+                 trade_direction_analysis, client_id=''):
     try:
         with pd.ExcelWriter(os.path.join(BASE_DIR, client_id + '交易统计.xlsx')) as writer:
-            net_worth.to_excel(writer, sheet_name='账户净值', encoding='ansi', index=None)
-            account.to_excel(writer, sheet_name='账户统计', encoding='ansi', index=None)
-            transaction_record.to_excel(writer, sheet_name='交易记录', encoding='ansi', index=None)
-            position_closed.to_excel(writer, sheet_name='平仓明细', encoding='ansi', index=None)
-            contracts_analysis.to_excel(writer, sheet_name='交易分析(按合约)', encoding='ansi', index=None)
-            categories_analysis.to_excel(writer, sheet_name='交易分析(按品种)', encoding='ansi', index=None)
+            net_worth.to_excel(writer, sheet_name='账户净值', encoding='ansi', index=False)
+            account.to_excel(writer, sheet_name='账户统计', encoding='ansi', index=False)
+            transaction_record.to_excel(writer, sheet_name='交易记录', encoding='ansi', index=False)
+            position_closed.to_excel(writer, sheet_name='平仓明细', encoding='ansi', index=False)
+            contracts_analysis.to_excel(writer, sheet_name='交易分析(按合约)', encoding='ansi', index=False)
+            categories_analysis.to_excel(writer, sheet_name='交易分析(按品种)', encoding='ansi', index=False)
+            trade_direction_analysis.to_excel(writer, sheet_name='交易分析(按买卖)', encoding='ansi', index=False)
         excel_data_format(os.path.join(BASE_DIR, client_id + '交易统计.xlsx'))
         excel_create_chart(os.path.join(BASE_DIR, client_id + '交易统计.xlsx'))
-        input('%.19s 信息：任务结束，感谢您的使用，按任意键退出！\n' % datetime.now())
-        raise SystemExit()
+        input(f'{datetime.now()} | 信息 | 任务结束, 感谢您的使用, 按任意键退出!\n')
+        # raise SystemExit()
     except PermissionError:
-        input('%.19s 错误：分析结果写入Excel被拒绝，请检查文件是否已打开，按任意键退出！\n' % datetime.now())
-        raise SystemExit()
+        input(f'{datetime.now()} | 错误 | 分析结果写入Excel被拒绝, 请检查文件是否已打开, 按任意键退出!\n')
+        # raise SystemExit()
 
 
 # -------------------------------------------------- 生成excel文件 结束 -------------------------------------------------
@@ -400,9 +514,9 @@ def main(argv):
     statement_list = read_statement_files(files_folder)
     client_id, account, transaction_record, position_closed = data_extract(statement_list, client_id=client_id)
     net_worth = net_worth_calc(account)
-    contracts_analysis, categories_analysis = data_statistic(transaction_record, position_closed)
+    contracts_analysis, categories_analysis, trade_direction_analysis = data_statistic(transaction_record, position_closed)
     output_excel(net_worth, account, transaction_record, position_closed, contracts_analysis, categories_analysis,
-                 client_id=client_id)
+                 trade_direction_analysis, client_id=client_id)
 
 
 if __name__ == '__main__':
