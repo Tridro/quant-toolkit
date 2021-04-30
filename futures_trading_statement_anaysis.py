@@ -54,25 +54,24 @@ TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'tf': 10000, 't': 10000, 'ts': 
 
 # ---------------------------------------------------- 数据读取 开始 ----------------------------------------------------
 def read_statement_files(dir_input=''):
-    print('期货交易结算单数据分析\n')
-    print('*' * 26 + '使用准备' + '*' * 26 + '\n' +
-          '*' + ' ' * 58 + '*' + '\n' +
-          '*  请把所有交易结算单txt文件放入当前或指定路径的文件夹中!  *\n' +
-          '*' + ' ' * 58 + '*' + '\n' +
-          '*' * 60 + '\n')
+    print(f"+{'-' * 23}  使用准备  {'-' * 23}+\n" +
+          f"|{' ':58}|\n" +
+          f"|{'请把所有交易结算单txt文件放入当前或指定路径的文件夹中!':^33}|\n" +
+          f"|{' ':58}|\n" +
+          f"+{'-' * 58}+\n")
     if os.path.isdir(dir_input):
         if os.path.exists(dir_input):
             path = dir_input
             folder_name = os.path.basename(path)
         else:
-            input('\n%.19s 错误： %s 路径错误，请检查路径并重试，按任意键退出！\n' % (datetime.now(), dir_input))
+            input(f"\n{datetime.now()} | 错误 | {dir_input} 路径错误，请检查路径并重试，按任意键退出！\n")
             raise SystemExit()
     else:
-        folder = input('输入文件夹名/文件夹路径：') if dir_input == '' else dir_input
+        folder = input("输入文件夹名/文件夹路径：") if dir_input == '' else dir_input
         path = os.path.join(BASE_DIR, folder) if not os.path.isdir(folder) else folder
         folder_name = os.path.basename(path)
         if not os.path.exists(path):
-            input('\n%.19s 错误：找不到 %s 文件夹，请检查并重试，按任意键退出！\n' % (datetime.now(), folder_name))
+            input(f"\n{datetime.now()} | 错误 | 找不到 {folder_name} 文件夹，请检查并重试，按任意键退出！\n")
             raise SystemExit()
     files_list = os.listdir(path)
     statement_data_list = []
@@ -156,6 +155,8 @@ def data_extract(source, client_id=''):
                             }
                     df = pd.DataFrame(data)
                     position_closed = position_closed.append(df)
+                    position_closed['持仓天数'] = position_closed['平仓日期'] - position_closed['开仓日期']
+                    position_closed['持仓天数'].apply(lambda x: x.days)
     print(f'{datetime.now()} | 信息 | 已提取所有结算单数据')
 
     return client_id, account, transaction_record, position_closed
@@ -194,14 +195,16 @@ def net_worth_calc(account):
 def data_statistic(transaction_record, position_closed):
     print(f'{datetime.now()} | 信息 | 开始数据统计')
     statistic_by_contracts = pd.DataFrame(columns=['品种', '合约', '平仓盈亏', '净利润', '交易次数', '交易手数', '盈利次数',
-                                                   '盈利手数', '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '成交额'])
+                                                   '盈利手数', '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '最大盈利',
+                                                   '最大亏损', '成交额'])
     statistic_by_contracts['合约'] = position_closed.groupby('合约').groups
     statistic_by_contracts = statistic_by_contracts.set_index('合约')
     for index in statistic_by_contracts.index:
         statistic_by_contracts.loc[index]['品种'] = CONTRACT_CODE[re.sub(r'[^A-Za-z]', '', index).lower()]
     position_closed_group_by_contracts = position_closed.groupby('合约')
     statistic_by_contracts['平仓盈亏'] = position_closed_group_by_contracts['交易盈亏'].sum()
-    statistic_by_contracts['净利润'] = position_closed_group_by_contracts['交易盈亏'].sum() - transaction_record.groupby('合约')['手续费'].sum()
+    statistic_by_contracts['净利润'] = position_closed_group_by_contracts['交易盈亏'].sum() - \
+                                    transaction_record.groupby('合约')['手续费'].sum()
     statistic_by_contracts['交易次数'] = position_closed_group_by_contracts.count()
     statistic_by_contracts['交易手数'] = position_closed_group_by_contracts['手数'].sum()
     statistic_by_contracts['盈利次数'] = position_closed_group_by_contracts.apply(lambda x: sum(x['交易盈亏'] > 0))
@@ -210,11 +213,13 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_contracts['交易盈亏率'] = round(statistic_by_contracts['盈利手数'] / statistic_by_contracts['交易手数'], 4)
     statistic_by_contracts['均次盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易次数'], 2)
     statistic_by_contracts['均手盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易手数'], 2)
+    statistic_by_contracts['最大盈利'] = position_closed_group_by_contracts.apply(lambda x: max(x['交易盈亏']))
+    statistic_by_contracts['最大亏损'] = position_closed_group_by_contracts.apply(lambda x: min(x['交易盈亏']))
     statistic_by_contracts['成交额'] = transaction_record.groupby('合约')['成交额'].sum()
     statistic_by_contracts = statistic_by_contracts.reset_index()
 
     statistic_by_categories = pd.DataFrame(columns=['品种', '平仓盈亏', '净利润', '交易次数', '交易手数', '盈利次数', '盈利手数',
-                                                    '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '成交额'])
+                                                    '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '最大盈利', '最大亏损', '成交额'])
     contracts_analysis_group_by_categories = statistic_by_contracts.groupby('品种')
     statistic_by_categories['品种'] = contracts_analysis_group_by_categories.groups
     statistic_by_categories = statistic_by_categories.set_index('品种')
@@ -228,6 +233,8 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_categories['交易盈亏率'] = round(statistic_by_categories['盈利手数'] / statistic_by_categories['交易手数'], 4)
     statistic_by_categories['均次盈亏'] = round(statistic_by_categories['平仓盈亏'] / statistic_by_categories['交易次数'], 2)
     statistic_by_categories['均手盈亏'] = round(statistic_by_categories['平仓盈亏'] / statistic_by_categories['交易手数'], 2)
+    statistic_by_categories['最大盈利'] = contracts_analysis_group_by_categories.apply(lambda x: max(x['最大盈利']))
+    statistic_by_categories['最大亏损'] = contracts_analysis_group_by_categories.apply(lambda x: min(x['最大亏损']))
     statistic_by_categories['成交额'] = contracts_analysis_group_by_categories['成交额'].sum()
     statistic_by_categories = statistic_by_categories.reset_index()
 
@@ -245,7 +252,8 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction['总盈利/总亏损'] = round(
         abs(statistic_by_trade_direction['总盈利'] / statistic_by_trade_direction['总亏损']), 4)
     statistic_by_trade_direction['手续费'] = transaction_record.groupby('买/卖')['手续费'].sum()
-    statistic_by_trade_direction['净利润'] = statistic_by_trade_direction['总盈利'] + statistic_by_trade_direction['总亏损'] - transaction_record.groupby('买/卖')['手续费'].sum()
+    statistic_by_trade_direction['净利润'] = statistic_by_trade_direction['总盈利'] + statistic_by_trade_direction['总亏损'] - \
+                                          transaction_record.groupby('买/卖')['手续费'].sum()
     statistic_by_trade_direction['盈利手数'] = position_closed_group_by_trade_direction.apply(
         lambda x: sum(x[x['交易盈亏'] > 0]['手数']))
     statistic_by_trade_direction['亏损手数'] = position_closed_group_by_trade_direction.apply(
@@ -253,8 +261,8 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction['持平手数'] = position_closed_group_by_trade_direction.apply(
         lambda x: sum(x[x['交易盈亏'] == 0]['手数']))
     statistic_by_trade_direction['盈利比率'] = round(statistic_by_trade_direction['盈利手数'] / (
-                statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
-                statistic_by_trade_direction['持平手数']), 4)
+            statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
+            statistic_by_trade_direction['持平手数']), 4)
     statistic_by_trade_direction['平均盈利'] = round(
         statistic_by_trade_direction['总盈利'] / statistic_by_trade_direction['盈利手数'], 2)
     statistic_by_trade_direction['平均亏损'] = round(
@@ -262,8 +270,8 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction['平均盈利/平均亏损'] = round(
         abs(statistic_by_trade_direction['平均盈利'] / statistic_by_trade_direction['平均亏损']), 4)
     statistic_by_trade_direction['平均手续费'] = round(statistic_by_trade_direction['手续费'] / (
-                statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
-                statistic_by_trade_direction['持平手数']), 2)
+            statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
+            statistic_by_trade_direction['持平手数']), 2)
     statistic_by_trade_direction['平均净利润'] = statistic_by_trade_direction['平均盈利'] + statistic_by_trade_direction[
         '平均亏损'] - statistic_by_trade_direction['平均手续费']
     statistic_by_trade_direction['最大盈利'] = position_closed_group_by_trade_direction['交易盈亏'].max()
@@ -514,7 +522,8 @@ def main(argv):
     statement_list = read_statement_files(files_folder)
     client_id, account, transaction_record, position_closed = data_extract(statement_list, client_id=client_id)
     net_worth = net_worth_calc(account)
-    contracts_analysis, categories_analysis, trade_direction_analysis = data_statistic(transaction_record, position_closed)
+    contracts_analysis, categories_analysis, trade_direction_analysis = data_statistic(transaction_record,
+                                                                                       position_closed)
     output_excel(net_worth, account, transaction_record, position_closed, contracts_analysis, categories_analysis,
                  trade_direction_analysis, client_id=client_id)
 
