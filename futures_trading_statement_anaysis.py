@@ -173,19 +173,19 @@ def net_worth_calc(account):
     df = pd.merge(account, net_worth, on=['日期'])
     df.loc[0, '净值'] = 1.0
     df['总权益'] = df['客户权益']
-    if df['期初结存'].iloc[0] == 0:
+    if df['期初结存'].iloc[0] != 0:
         df.loc[0, '份额'] = (df.iloc[0]['期初结存'] + df.iloc[0]['出入金']) / df.iloc[0]['净值']
     else:
         df.loc[0, '份额'] = df.iloc[0]['出入金'] / df.iloc[0]['净值']
     df.loc[0, '份额变动'] = df.iloc[0]['份额']
-    df.loc[0, '净值'] = df.iloc[0]['总权益'] / df.iloc[0]['份额']
     for index in range(1, len(df.index)):
         if df.iloc[index]['出入金'] != 0:
-            df.loc[index, '份额变动'] = df.iloc[index]['出入金'] / df.iloc[index - 1]['净值']
+            df.loc[index, '净值'] = (df.iloc[index]['总权益'] - df.iloc[index]['出入金']) / df.iloc[index - 1]['份额']
+            df.loc[index, '份额变动'] = df.iloc[index]['出入金'] / df.iloc[index]['净值']
             df.loc[index, '份额'] = df.iloc[index - 1]['份额'] + df.iloc[index]['份额变动']
         else:
+            df.loc[index, '净值'] = df.iloc[index]['总权益'] / df.iloc[index - 1]['份额']
             df.loc[index, '份额'] = df.iloc[index - 1]['份额']
-        df.loc[index, '净值'] = df.iloc[index]['总权益'] / df.iloc[index]['份额']
     df['份额变动'].fillna(0, inplace=True)
     net_worth = pd.DataFrame(df, columns=net_worth.columns)
     print(f'{datetime.now()} | 信息 | 已完成净值化处理')
