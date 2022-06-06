@@ -20,3 +20,12 @@ $ pip install pandas openpyxl
 ``` {.sourceCode .bash}
 $ python futures_trading_statement_analysis.py -d/--dir <完整结算单文件夹路径/当前路径文件夹名> -i/--id <客户号>
 ```
+## 期货跨月偏离度监测
+最近更新: 2022/6/6
+1. 首次上传脚本
+### 使用方式
+* 安装python，并安装所依赖库
+``` {.sourceCode .bash}
+$ pip install numpy tqsdk matplotlib
+```
+* 直接运行, 输入天勤量化账号和密码后，指定期货品种，会生成一个matplotlib窗口，动态监控当前品种跨月结构，每隔0.5秒刷新。
