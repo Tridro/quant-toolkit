@@ -27,7 +27,8 @@ from openpyxl.chart.layout import Layout, ManualLayout
 # ---------------------------------------------------- 基础数据 开始 ----------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-CONTRACT_CODE = {'if': '沪深300股指', 'ih': '上证50股指', 'ic': '中证500股指', 'im': '中证1000股指', 'tf': '五债', 't': '十债', 'ts': '二债',
+CONTRACT_CODE = {'if': '沪深300股指', 'ih': '上证50股指', 'ic': '中证500股指', 'im': '中证1000股指', 'tf': '五债', 't': '十债',
+                 'ts': '二债',
                  'cu': '铜', 'al': '铝', 'zn': '锌', 'pb': '铅', 'ni': '镍', 'sn': '锡', 'au': '黄金', 'ag': '白银',
                  'j': '焦炭', 'jm': '焦煤', 'zc': '动力煤ZC',
                  'rb': '螺纹钢', 'i': '铁矿石', 'hc': '热轧卷板', 'sf': '硅铁', 'sm': '锰硅', 'fg': '玻璃', 'ss': '不锈钢',
@@ -40,13 +41,13 @@ CONTRACT_CODE = {'if': '沪深300股指', 'ih': '上证50股指', 'ic': '中证5
                  'rs': '油菜籽', 'jr': '粳稻谷', 'lr': '晚籼稻', 'pm': '普通小麦', 'sc': '原油',
                  'ap': '鲜苹果', 'jd': '鲜鸡蛋', 'cj': '干制红枣', 'pf': '短纤', 'bc': '国际铜', 'lh': '生猪', 'pk': '花生'}
 
-TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'im': 200, 'tf': 10000, 't': 10000, 'ts': 20000, 'cu': 5, 'al': 5, 'zn': 5,
-                'sc': 1000, 'pb': 5, 'ni': 1, 'sn': 1, 'au': 1000, 'ag': 15, 'j': 100, 'jm': 60, 'zc': 100, 'rb': 10,
-                'i': 100, 'hc': 10, 'sf': 5, 'sm': 5, 'wr': 10, 'fu': 10, 'bu': 10, 'ru': 10, 'l': 5, 'pp': 5, 'v': 5,
-                'ta': 5, 'ma': 10, 'sp': 10, 'm': 10, 'y': 10, 'oi': 10, 'a': 10, 'b': 10, 'p': 10, 'c': 10, 'rm': 10,
-                'cs': 10, 'jd': 10, 'bb': 500, 'fb': 500, 'cf': 5, 'cy': 5, 'sr': 10, 'wh': 20, 'ri': 20, 'jr': 20,
-                'lr': 20, 'fg': 20, 'ss': 5, 'nr': 10, 'eg': 10, 'eb': 5, 'ur': 20, 'rr': 10, 'rs': 10, 'ap': 10,
-                'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10, 'pf': 5, 'bc': 5, 'lh': 16, 'pk': 5}
+TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'im': 200, 'tf': 10000, 't': 10000, 'ts': 20000, 'cu': 5, 'al': 5,
+                'zn': 5, 'sc': 1000, 'pb': 5, 'ni': 1, 'sn': 1, 'au': 1000, 'ag': 15, 'j': 100, 'jm': 60, 'zc': 100,
+                'rb': 10, 'i': 100, 'hc': 10, 'sf': 5, 'sm': 5, 'wr': 10, 'fu': 10, 'bu': 10, 'ru': 10, 'l': 5, 'pp': 5,
+                'v': 5, 'ta': 5, 'ma': 10, 'sp': 10, 'm': 10, 'y': 10, 'oi': 10, 'a': 10, 'b': 10, 'p': 10, 'c': 10,
+                'rm': 10, 'cs': 10, 'jd': 10, 'bb': 500, 'fb': 500, 'cf': 5, 'cy': 5, 'sr': 10, 'wh': 20, 'ri': 20,
+                'jr': 20, 'lr': 20, 'fg': 20, 'ss': 5, 'nr': 10, 'eg': 10, 'eb': 5, 'ur': 20, 'rr': 10, 'rs': 10,
+                'ap': 10, 'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10, 'pf': 5, 'bc': 5, 'lh': 16, 'pk': 5}
 
 
 # ---------------------------------------------------- 基础数据 结束 ----------------------------------------------------
@@ -101,25 +102,25 @@ def data_extract(source, client_id=''):
     sep = re.compile(r'[|\s|]+')
 
     for i in range(len(source)):
+        statement_date = re.search(r'[^日期 Date：][0-9][0-9][0-9][0-9][0-9][0-9][0-9]', source[i][10]).group()
+        is_new_version = True if pd.to_datetime(statement_date) >= datetime(2022, 9, 23) else False
         if client_id != re.search(r'[^客户号 ClientID：][0-9]+', source[i][8]).group():
-            input(f"{datetime.now()} | 错误 | "
-                  f"{re.search(r'[^日期 Date：][0-9][0-9][0-9][0-9][0-9][0-9][0-9]', source[i][10]).group()} "
-                  f"结算单客户号不正确, 请检查后重试, 按任意键退出!\n")
+            input(f"{datetime.now()} | 错误 | {statement_date} 结算单客户号不正确, 请检查后重试, 按任意键退出!\n")
             raise SystemExit()
         for j in range(len(source[i])):
             if re.match(r'\s*资金状况', source[i][j]):
-                date = re.search(r'[^日期 Date：][0-9][0-9][0-9][0-9][0-9][0-9][0-9]', source[i][10]).group()
-                balance_bf = float(source[i][j + 4][17:45].strip())
-                deposit_withdraw = float(source[i][j + 6][25:47].strip())
-                realized_pl = float(source[i][j + 8][18:46].strip())
-                mtm_pl = float(source[i][j + 10][15:44].strip())
-                commission = float(source[i][j + 14][17:46].strip())
-                balance_cf = float(source[i][j + 6][65:-1].strip())
                 client_equity = float(source[i][j + 10][65:-1].strip())
                 margin_occupied = float(source[i][j + 14][70:-1].strip())
-                data = {'日期': pd.to_datetime(date), '期初结存': balance_bf, '出入金': deposit_withdraw,
-                        '平仓盈亏': realized_pl, '持仓盯市盈亏': mtm_pl, '手续费': commission, '期末结存': balance_cf,
-                        '客户权益': client_equity, '保证金占用': margin_occupied, '风险度': margin_occupied / client_equity}
+                data = {'日期': pd.to_datetime(statement_date),
+                        '期初结存': float(source[i][j + 4][17:45].strip()),
+                        '出入金': float(source[i][j + 6][25:47].strip()),
+                        '平仓盈亏': float(source[i][j + 8][18:46].strip()),
+                        '持仓盯市盈亏': float(source[i][j + 10][15:44].strip()),
+                        '手续费': float(source[i][j + 14][17:46].strip()),
+                        '期末结存': float(source[i][j + 6][65:-1].strip()),
+                        '客户权益': client_equity,
+                        '保证金占用': margin_occupied,
+                        '风险度': margin_occupied / client_equity}
                 df = pd.DataFrame([data])
                 account = pd.concat([account, df], ignore_index=True)
         for j in range(len(source[i])):
@@ -130,11 +131,21 @@ def data_extract(source, client_id=''):
                     if re.match(r'^\n', source[i][ldx]):
                         continue
                     row = sep.split(source[i][ldx])
-                    data = {'成交日期': [pd.to_datetime(row[1])], '交易所': [row[2]], '品种': [row[3]], '合约': [row[4]],
-                            '买/卖': [row[5]], '投/保': [row[6]], '成交价': [float(row[7])], '手数': [int(row[8])],
-                            '成交额': [float(row[9])], '开/平': [row[10]], '手续费': [float(row[11])],
-                            '平仓盈亏': [float(row[12])], '权利金收支': [float(row[13])], '成交序号': [int(row[14])]}
-                    df = pd.DataFrame(data)
+                    data = {'成交日期': pd.to_datetime(row[1]),
+                            '交易所': row[3] if is_new_version else row[2],
+                            '品种': row[5] if is_new_version else row[3],
+                            '合约': row[6] if is_new_version else row[4],
+                            '买/卖': row[7] if is_new_version else row[5],
+                            '投/保': row[8] if is_new_version else row[6],
+                            '成交价': float(row[9]) if is_new_version else float(row[7]),
+                            '手数': int(row[10]) if is_new_version else int(row[8]),
+                            '成交额': float(row[11]) if is_new_version else float(row[9]),
+                            '开/平': row[12] if is_new_version else row[10],
+                            '手续费': float(row[13]) if is_new_version else float(row[11]),
+                            '平仓盈亏': float(row[14]) if is_new_version else float(row[12]),
+                            '权利金收支': float(row[15]) if is_new_version else float(row[13]),
+                            '成交序号': int(row[16]) if is_new_version else int(row[14])}
+                    df = pd.DataFrame([data])
                     transaction_record = pd.concat([transaction_record, df], ignore_index=True)
         for j in range(len(source[i])):
             if re.match(r'\s*平仓明细 Position Closed', source[i][j]):
@@ -144,16 +155,27 @@ def data_extract(source, client_id=''):
                     if re.match(r'^\n', source[i][ldx]):
                         continue
                     row = sep.split(source[i][ldx])
-                    price_margin = float(row[10]) - float(row[8]) if row[6] == '卖' else float(row[8]) - float(row[10])
-                    data = {'平仓日期': [pd.to_datetime(row[1])], '交易所': [row[2]], '品种': [row[3]], '合约': [row[4]],
-                            '开仓日期': [pd.to_datetime(row[5])], '买/卖': [row[6]], '手数': [int(row[7])],
-                            '开仓价': [float(row[8])], '昨结算': [float(row[9])], '成交价': [float(row[10])],
-                            '平仓盈亏': [float(row[11])], '权利金收支': [float(row[12])],
-                            '交易盈亏': [price_margin * int(row[7]) *
-                                     TRADING_UNIT[re.sub(r'[^A-Za-z]', '', row[4]).lower()]],
-                            '盈亏率': [price_margin / float(row[8])],
-                            }
-                    df = pd.DataFrame(data)
+                    instrument = row[6] if is_new_version else row[4]
+                    b_s = row[9] if is_new_version else row[6]
+                    lots = int(row[10]) if is_new_version else int(row[7])
+                    open_price = float(row[11]) if is_new_version else float(row[8])
+                    transaction_price = float(row[13]) if is_new_version else float(row[10])
+                    price_margin = transaction_price - open_price if b_s == '卖' else open_price - transaction_price
+                    data = {'平仓日期': pd.to_datetime(row[1]),
+                            '交易所': row[3] if is_new_version else row[2],
+                            '品种': row[5] if is_new_version else row[3],
+                            '合约': instrument,
+                            '开仓日期': pd.to_datetime(row[7]) if is_new_version else pd.to_datetime(row[5]),
+                            '买/卖': b_s,
+                            '手数': lots,
+                            '开仓价': open_price,
+                            '昨结算': float(row[12]) if is_new_version else float(row[9]),
+                            '成交价': transaction_price,
+                            '平仓盈亏': float(row[14]) if is_new_version else float(row[11]),
+                            '权利金收支': float(row[15]) if is_new_version else float(row[12]),
+                            '交易盈亏': price_margin * lots * TRADING_UNIT[re.sub(r'[^A-Za-z]', '', instrument).lower()],
+                            '盈亏率': price_margin / open_price}
+                    df = pd.DataFrame([data])
                     position_closed = pd.concat([position_closed, df], ignore_index=True)
                     position_closed['持仓天数'] = position_closed['平仓日期'] - position_closed['开仓日期']
                     position_closed['持仓天数'].apply(lambda x: x.days)
@@ -203,8 +225,7 @@ def data_statistic(transaction_record, position_closed):
         statistic_by_contracts.loc[index]['品种'] = CONTRACT_CODE[re.sub(r'[^A-Za-z]', '', index).lower()]
     position_closed_group_by_contracts = position_closed.groupby('合约')
     statistic_by_contracts['平仓盈亏'] = position_closed_group_by_contracts['交易盈亏'].sum().astype('float64')
-    statistic_by_contracts['净利润'] = position_closed_group_by_contracts['交易盈亏'].sum().astype('float64') - \
-                                    transaction_record.groupby('合约')['手续费'].sum().astype('float64')
+    statistic_by_contracts['净利润'] = position_closed_group_by_contracts['交易盈亏'].sum().astype('float64') - transaction_record.groupby('合约')['手续费'].sum().astype('float64')
     statistic_by_contracts['交易次数'] = position_closed_group_by_contracts['品种'].count().astype('int64')
     statistic_by_contracts['交易手数'] = position_closed_group_by_contracts['手数'].sum().astype('int64')
     statistic_by_contracts['盈利次数'] = position_closed_group_by_contracts.apply(lambda x: sum(x['交易盈亏'] > 0))
@@ -219,7 +240,8 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_contracts = statistic_by_contracts.reset_index()
 
     statistic_by_categories = pd.DataFrame(columns=['品种', '平仓盈亏', '净利润', '交易次数', '交易手数', '盈利次数', '盈利手数',
-                                                    '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '最大盈利', '最大亏损', '成交额'])
+                                                    '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '最大盈利', '最大亏损',
+                                                    '成交额'])
     contracts_analysis_group_by_categories = statistic_by_contracts.groupby('品种')
     statistic_by_categories['品种'] = contracts_analysis_group_by_categories.groups
     statistic_by_categories = statistic_by_categories.set_index('品种')
@@ -252,8 +274,7 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction['总盈利/总亏损'] = round(
         abs(statistic_by_trade_direction['总盈利'] / statistic_by_trade_direction['总亏损']), 4)
     statistic_by_trade_direction['手续费'] = transaction_record.groupby('买/卖')['手续费'].sum().astype('float64')
-    statistic_by_trade_direction['净利润'] = statistic_by_trade_direction['总盈利'] + statistic_by_trade_direction['总亏损'] - \
-                                          transaction_record.groupby('买/卖')['手续费'].sum().astype('float64')
+    statistic_by_trade_direction['净利润'] = statistic_by_trade_direction['总盈利'] + statistic_by_trade_direction['总亏损'] - transaction_record.groupby('买/卖')['手续费'].sum().astype('float64')
     statistic_by_trade_direction['盈利手数'] = position_closed_group_by_trade_direction.apply(
         lambda x: sum(x[x['交易盈亏'] > 0]['手数']))
     statistic_by_trade_direction['亏损手数'] = position_closed_group_by_trade_direction.apply(
@@ -341,7 +362,7 @@ def excel_data_format(excel_file):
             for row_index in range(worksheet.min_row, worksheet.max_row):
                 pass
 
-    def data_transposition(workbook, sheet_name, index=False):
+    def data_transposition(workbook, sheet_name, index=None):
         """
         数据转置
         :param workbook:
@@ -350,7 +371,7 @@ def excel_data_format(excel_file):
         :return:
         """
         data = workbook[sheet_name].values
-        if index is True:
+        if index:
             cols = next(data)[1:]
             data = list(data)
             index = [r[0] for r in data]
@@ -358,14 +379,13 @@ def excel_data_format(excel_file):
         else:
             cols = next(data)[0:]
             data = list(data)
-            index = None
             data = (islice(r, 0, None) for r in data)
         df = pd.DataFrame(data, index=index, columns=cols).T
         df.reset_index(level=0, inplace=True)
         idx = workbook.sheetnames.index(sheet_name)
         workbook.remove(workbook.worksheets[idx])
         workbook.create_sheet(sheet_name, idx)
-        for r in dataframe_to_rows(df, index=index, header=None):
+        for r in dataframe_to_rows(df, index=True if index else False, header=False):
             workbook[sheet_name].append(r)
         for cell in workbook[sheet_name]['A']:
             cell.style = 'Pandas'
