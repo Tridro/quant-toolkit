@@ -39,7 +39,8 @@ CONTRACT_CODE = {'if': '沪深300股指', 'ih': '上证50股指', 'ic': '中证5
                  'rm': '菜籽粕', 'cs': '玉米淀粉',
                  'cf': '一号棉花', 'cy': '棉纱', 'sr': '白砂糖', 'wh': '强筋小麦', 'ri': '旱籼稻', 'rr': '粳米',
                  'rs': '油菜籽', 'jr': '粳稻谷', 'lr': '晚籼稻', 'pm': '普通小麦', 'sc': '原油',
-                 'ap': '鲜苹果', 'jd': '鲜鸡蛋', 'cj': '干制红枣', 'pf': '短纤', 'bc': '国际铜', 'lh': '生猪', 'pk': '花生'}
+                 'ap': '鲜苹果', 'jd': '鲜鸡蛋', 'cj': '干制红枣', 'pf': '短纤', 'bc': '国际铜', 'lh': '生猪', 'pk': '花生',
+                 'si': '工业硅'}
 
 TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'im': 200, 'tf': 10000, 't': 10000, 'ts': 20000, 'cu': 5, 'al': 5,
                 'zn': 5, 'sc': 1000, 'pb': 5, 'ni': 1, 'sn': 1, 'au': 1000, 'ag': 15, 'j': 100, 'jm': 60, 'zc': 100,
@@ -47,9 +48,7 @@ TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'im': 200, 'tf': 10000, 't': 10
                 'v': 5, 'ta': 5, 'ma': 10, 'sp': 10, 'm': 10, 'y': 10, 'oi': 10, 'a': 10, 'b': 10, 'p': 10, 'c': 10,
                 'rm': 10, 'cs': 10, 'jd': 10, 'bb': 500, 'fb': 500, 'cf': 5, 'cy': 5, 'sr': 10, 'wh': 20, 'ri': 20,
                 'jr': 20, 'lr': 20, 'fg': 20, 'ss': 5, 'nr': 10, 'eg': 10, 'eb': 5, 'ur': 20, 'rr': 10, 'rs': 10,
-                'ap': 10, 'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10, 'pf': 5, 'bc': 5, 'lh': 16, 'pk': 5}
-
-
+                'ap': 10, 'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10, 'pf': 5, 'bc': 5, 'lh': 16, 'pk': 5, 'si': 5}
 # ---------------------------------------------------- 基础数据 结束 ----------------------------------------------------
 
 
@@ -83,8 +82,6 @@ def read_statement_files(dir_input=''):
                 statement_data_list.append(f.readlines())
     print(f'\n{datetime.now()} | 信息 | 已读取 {folder_name} 文件夹')
     return statement_data_list
-
-
 # ---------------------------------------------------- 数据读取 结束 ----------------------------------------------------
 
 
@@ -100,7 +97,6 @@ def data_extract(source, client_id=''):
     position_closed = pd.DataFrame(columns=['平仓日期', '交易所', '品种', '合约', '开仓日期', '买/卖', '手数', '开仓价',
                                             '昨结算', '成交价', '平仓盈亏', '权利金收支', '交易盈亏', '盈亏率'])
     sep = re.compile(r'[|\s|]+')
-
     for i in range(len(source)):
         statement_date = re.search(r'[^日期 Date：][0-9][0-9][0-9][0-9][0-9][0-9][0-9]', source[i][10]).group()
         is_new_version = True if pd.to_datetime(statement_date) >= datetime(2022, 9, 23) else False
@@ -180,10 +176,7 @@ def data_extract(source, client_id=''):
                     position_closed['持仓天数'] = position_closed['平仓日期'] - position_closed['开仓日期']
                     position_closed['持仓天数'].apply(lambda x: x.days)
     print(f'{datetime.now()} | 信息 | 已提取所有结算单数据')
-
     return client_id, account, transaction_record, position_closed
-
-
 # ---------------------------------------------------- 数据提取 结束 ----------------------------------------------------
 
 
@@ -219,11 +212,11 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_contracts = pd.DataFrame(columns=['品种', '合约', '平仓盈亏', '净利润', '交易次数', '交易手数', '盈利次数',
                                                    '盈利手数', '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '最大盈利',
                                                    '最大亏损', '成交额'])
-    statistic_by_contracts['合约'] = position_closed.groupby('合约').groups
+    position_closed_group_by_contracts = position_closed.groupby('合约')
+    statistic_by_contracts['合约'] = position_closed_group_by_contracts.groups.keys()
     statistic_by_contracts = statistic_by_contracts.set_index('合约')
     for index in statistic_by_contracts.index:
         statistic_by_contracts.loc[index]['品种'] = CONTRACT_CODE[re.sub(r'[^A-Za-z]', '', index).lower()]
-    position_closed_group_by_contracts = position_closed.groupby('合约')
     statistic_by_contracts['平仓盈亏'] = position_closed_group_by_contracts['交易盈亏'].sum().astype('float64')
     statistic_by_contracts['净利润'] = position_closed_group_by_contracts['交易盈亏'].sum().astype('float64') - transaction_record.groupby('合约')['手续费'].sum().astype('float64')
     statistic_by_contracts['交易次数'] = position_closed_group_by_contracts['品种'].count().astype('int64')
@@ -243,7 +236,7 @@ def data_statistic(transaction_record, position_closed):
                                                     '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '最大盈利', '最大亏损',
                                                     '成交额'])
     contracts_analysis_group_by_categories = statistic_by_contracts.groupby('品种')
-    statistic_by_categories['品种'] = contracts_analysis_group_by_categories.groups
+    statistic_by_categories['品种'] = contracts_analysis_group_by_categories.groups.keys()
     statistic_by_categories = statistic_by_categories.set_index('品种')
     statistic_by_categories['平仓盈亏'] = contracts_analysis_group_by_categories['平仓盈亏'].sum()
     statistic_by_categories['净利润'] = contracts_analysis_group_by_categories['净利润'].sum()
@@ -265,7 +258,7 @@ def data_statistic(transaction_record, position_closed):
                                                          '平均盈利/平均亏损', '平均手续费', '平均净利润', '最大盈利', '最大亏损',
                                                          '最大盈利/总盈利', '最大亏损/总亏损', '净利润/最大亏损'])
     position_closed_group_by_trade_direction = position_closed.groupby('买/卖')
-    statistic_by_trade_direction['统计指标'] = position_closed_group_by_trade_direction.groups
+    statistic_by_trade_direction['统计指标'] = position_closed_group_by_trade_direction.groups.keys()
     statistic_by_trade_direction = statistic_by_trade_direction.set_index('统计指标')
     statistic_by_trade_direction['总盈利'] = position_closed_group_by_trade_direction.apply(
         lambda x: sum(x[x['交易盈亏'] > 0]['交易盈亏']))
@@ -306,8 +299,6 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction = statistic_by_trade_direction.reset_index()
     print(f'{datetime.now()} | 信息 | 已完成数据统计')
     return statistic_by_contracts, statistic_by_categories, statistic_by_trade_direction
-
-
 # ---------------------------------------------------- 数据统计 结束 ----------------------------------------------------
 
 
@@ -402,8 +393,6 @@ def excel_data_format(excel_file):
     wb.save(excel_file)
     wb.close()
     print(f'{datetime.now()} | 信息 | 已生成Excel数据表')
-
-
 # --------------------------------------------------- 数据格式化 结束 ---------------------------------------------------
 
 
@@ -492,8 +481,6 @@ def excel_create_chart(excel_file):
     wb.close()
     # 输出信息
     print(f'{datetime.now()} | 信息 | 已生成Excel图表')
-
-
 # ---------------------------------------------------- 生成图表 结束 ----------------------------------------------------
 
 
@@ -501,14 +488,15 @@ def excel_create_chart(excel_file):
 def output_excel(net_worth, account, transaction_record, position_closed, contracts_analysis, categories_analysis,
                  trade_direction_analysis, client_id=''):
     try:
-        with pd.ExcelWriter(os.path.join(BASE_DIR, client_id + '交易统计.xlsx')) as writer:
-            net_worth.to_excel(writer, sheet_name='账户净值', encoding='ansi', index=False)
-            account.to_excel(writer, sheet_name='账户统计', encoding='ansi', index=False)
-            transaction_record.to_excel(writer, sheet_name='交易记录', encoding='ansi', index=False)
-            position_closed.to_excel(writer, sheet_name='平仓明细', encoding='ansi', index=False)
-            contracts_analysis.to_excel(writer, sheet_name='交易分析(按合约)', encoding='ansi', index=False)
-            categories_analysis.to_excel(writer, sheet_name='交易分析(按品种)', encoding='ansi', index=False)
-            trade_direction_analysis.to_excel(writer, sheet_name='交易分析(按买卖)', encoding='ansi', index=False)
+        with pd.ExcelWriter(os.path.join(BASE_DIR, client_id + '交易统计.xlsx'), mode='w',
+                            engine="openpyxl") as writer:
+            net_worth.to_excel(writer, sheet_name='账户净值', index=False)
+            account.to_excel(writer, sheet_name='账户统计', index=False)
+            transaction_record.to_excel(writer, sheet_name='交易记录', index=False)
+            position_closed.to_excel(writer, sheet_name='平仓明细', index=False)
+            contracts_analysis.to_excel(writer, sheet_name='交易分析(按合约)', index=False)
+            categories_analysis.to_excel(writer, sheet_name='交易分析(按品种)', index=False)
+            trade_direction_analysis.to_excel(writer, sheet_name='交易分析(按买卖)', index=False)
         excel_data_format(os.path.join(BASE_DIR, client_id + '交易统计.xlsx'))
         excel_create_chart(os.path.join(BASE_DIR, client_id + '交易统计.xlsx'))
         input(f'{datetime.now()} | 信息 | 任务结束, 感谢您的使用, 按任意键退出!\n')
@@ -516,8 +504,6 @@ def output_excel(net_worth, account, transaction_record, position_closed, contra
     except PermissionError:
         input(f'{datetime.now()} | 错误 | 分析结果写入Excel被拒绝, 请检查文件是否已打开, 按任意键退出!\n')
         # raise SystemExit()
-
-
 # -------------------------------------------------- 生成excel文件 结束 -------------------------------------------------
 
 
