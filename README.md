@@ -29,3 +29,12 @@ $ python futures_trading_statement_analysis.py -d/--dir <完整结算单文件�
 $ pip install numpy tqsdk matplotlib
 ```
 * 直接运行, 输入天勤量化账号和密码后，指定期货品种，会生成一个matplotlib窗口，动态监控当前品种跨月结构，每隔0.5秒刷新。
+## 自动计算保证金需求
+最近更新: 2023/6/29
+1. 首次上传脚本
+### 使用方式
+* 安装python，并安装所依赖库
+``` {.sourceCode .bash}
+$ pip install pandas tqsdk openpyxl
+```
+* 直接运行, 输入天勤量化账号和密码后，会读取本地的保证金比率表<margin_ratio.xlsx>, 根据时间计算当日或者判断下一个交易日的合约保证金需求，并生成保证金需求数据表。
