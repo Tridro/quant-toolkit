@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time     : 2019/10/16 11:04
-# @Author   : 周驰卓
-# @Company  : 光大期货
-# @Site     :
-# @File     : 期货交易结算单数据分析.py
-# @Software : PyCharm
+# @Time         : 2019/10/16 11:04
+# @Author       : Tridro
+# @Organization : Everbright Futures
+# @E-mail       : tridro@beneorigin.com
+# @File         : futures_trading_statement_anaysis.py
+# All CopyRight Reserved
 
 import getopt
 import os.path
@@ -28,8 +28,9 @@ from openpyxl.chart.layout import Layout, ManualLayout
 BASE_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 CONTRACT_CODE = {'if': '沪深300股指', 'ih': '上证50股指', 'ic': '中证500股指', 'im': '中证1000股指', 'tf': '五债', 't': '十债',
-                 'ts': '二债',
-                 'cu': '铜', 'al': '铝', 'zn': '锌', 'pb': '铅', 'ni': '镍', 'sn': '锡', 'au': '黄金', 'ag': '白银',
+                 'ts': '二债', 'tl': '三十年债',
+                 'cu': '铜', 'al': '铝', 'zn': '锌', 'pb': '铅', 'ni': '镍', 'sn': '锡', 'au': '黄金', 'ag': '白银', 
+                 'ao': '氧化铝',
                  'j': '焦炭', 'jm': '焦煤', 'zc': '动力煤ZC',
                  'rb': '螺纹钢', 'i': '铁矿石', 'hc': '热轧卷板', 'sf': '硅铁', 'sm': '锰硅', 'fg': '玻璃', 'ss': '不锈钢',
                  'wr': '线材', 'ru': '天然橡胶', 'sp': '漂针浆', 'bb': '细木工板', 'fb': '纤维板', 'nr': '20号胶',
@@ -48,7 +49,8 @@ TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'im': 200, 'tf': 10000, 't': 10
                 'v': 5, 'ta': 5, 'ma': 10, 'sp': 10, 'm': 10, 'y': 10, 'oi': 10, 'a': 10, 'b': 10, 'p': 10, 'c': 10,
                 'rm': 10, 'cs': 10, 'jd': 10, 'bb': 500, 'fb': 500, 'cf': 5, 'cy': 5, 'sr': 10, 'wh': 20, 'ri': 20,
                 'jr': 20, 'lr': 20, 'fg': 20, 'ss': 5, 'nr': 10, 'eg': 10, 'eb': 5, 'ur': 20, 'rr': 10, 'rs': 10,
-                'ap': 10, 'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10, 'pf': 5, 'bc': 5, 'lh': 16, 'pk': 5, 'si': 5}
+                'ap': 10, 'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10, 'pf': 5, 'bc': 5, 'lh': 16, 'pk': 5, 'si': 5,
+                'tl': 10000, 'ao': '20'}
 # ---------------------------------------------------- 基础数据 结束 ----------------------------------------------------
 
 
