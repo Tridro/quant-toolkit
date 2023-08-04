@@ -28,20 +28,17 @@ from openpyxl.chart.layout import Layout, ManualLayout
 BASE_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 CONTRACT_CODE = {'if': '沪深300股指', 'ih': '上证50股指', 'ic': '中证500股指', 'im': '中证1000股指', 'tf': '五债', 't': '十债',
-                 'ts': '二债', 'tl': '三十年债',
-                 'cu': '铜', 'al': '铝', 'zn': '锌', 'pb': '铅', 'ni': '镍', 'sn': '锡', 'au': '黄金', 'ag': '白银', 
-                 'ao': '氧化铝',
-                 'j': '焦炭', 'jm': '焦煤', 'zc': '动力煤ZC',
-                 'rb': '螺纹钢', 'i': '铁矿石', 'hc': '热轧卷板', 'sf': '硅铁', 'sm': '锰硅', 'fg': '玻璃', 'ss': '不锈钢',
-                 'wr': '线材', 'ru': '天然橡胶', 'sp': '漂针浆', 'bb': '细木工板', 'fb': '纤维板', 'nr': '20号胶',
-                 'fu': '燃料油', 'bu': '石油沥青', 'l': '线型低密度聚乙烯', 'pp': '聚丙烯', 'v': '聚氯乙烯', 'ta': '精对苯二甲酸',
-                 'ma': '甲醇MA', 'eg': '乙二醇', 'eb': '苯乙烯', 'ur': '尿素', 'sa': '纯碱', 'pg': '液化石油气', 'lu': '低硫燃料油',
-                 'm': '豆粕', 'y': '豆油', 'oi': '菜籽油', 'a': '黄大豆1号', 'b': '黄大豆2号', 'p': '棕榈油', 'c': '黄玉米',
-                 'rm': '菜籽粕', 'cs': '玉米淀粉',
-                 'cf': '一号棉花', 'cy': '棉纱', 'sr': '白砂糖', 'wh': '强筋小麦', 'ri': '旱籼稻', 'rr': '粳米',
-                 'rs': '油菜籽', 'jr': '粳稻谷', 'lr': '晚籼稻', 'pm': '普通小麦', 'sc': '原油',
-                 'ap': '鲜苹果', 'jd': '鲜鸡蛋', 'cj': '干制红枣', 'pf': '短纤', 'bc': '国际铜', 'lh': '生猪', 'pk': '花生',
-                 'si': '工业硅'}
+                 'ts': '二债', 'cu': '铜', 'al': '铝', 'zn': '锌', 'pb': '铅', 'ni': '镍', 'sn': '锡', 'au': '黄金', 
+                 'ag': '白银', 'j': '焦炭', 'jm': '焦煤', 'zc': '动力煤ZC', 'rb': '螺纹钢', 'i': '铁矿石', 'hc': '热轧卷板', 
+                 'sf': '硅铁', 'sm': '锰硅', 'fg': '玻璃', 'ss': '不锈钢', 'wr': '线材', 'ru': '天然橡胶', 'sp': '漂针浆', 
+                 'bb': '细木工板', 'fb': '纤维板', 'nr': '20号胶', 'fu': '燃料油', 'bu': '石油沥青', 'l': '线型低密度聚乙烯', 
+                 'pp': '聚丙烯', 'v': '聚氯乙烯', 'ta': '精对苯二甲酸', 'ma': '甲醇MA', 'eg': '乙二醇', 'eb': '苯乙烯', 
+                 'ur': '尿素', 'sa': '纯碱', 'pg': '液化石油气', 'lu': '低硫燃料油', 'm': '豆粕', 'y': '豆油', 'oi': '菜籽油', 
+                 'a': '黄大豆1号', 'b': '黄大豆2号', 'p': '棕榈油', 'c': '黄玉米', 'rm': '菜籽粕', 'cs': '玉米淀粉', 
+                 'cf': '一号棉花', 'cy': '棉纱', 'sr': '白砂糖', 'wh': '强筋小麦', 'ri': '旱籼稻', 'rr': '粳米', 'rs': '油菜籽', 
+                 'jr': '粳稻谷', 'lr': '晚籼稻', 'pm': '普通小麦', 'sc': '原油', 'ap': '鲜苹果', 'jd': '鲜鸡蛋', 
+                 'cj': '干制红枣', 'pf': '短纤', 'bc': '国际铜', 'lh': '生猪', 'pk': '花生', 'si': '工业硅', 'ao': '氧化铝', 
+                 'lc': '碳酸锂', 'br': 'BR橡胶'}
 
 TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'im': 200, 'tf': 10000, 't': 10000, 'ts': 20000, 'cu': 5, 'al': 5,
                 'zn': 5, 'sc': 1000, 'pb': 5, 'ni': 1, 'sn': 1, 'au': 1000, 'ag': 15, 'j': 100, 'jm': 60, 'zc': 100,
@@ -50,7 +47,9 @@ TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'im': 200, 'tf': 10000, 't': 10
                 'rm': 10, 'cs': 10, 'jd': 10, 'bb': 500, 'fb': 500, 'cf': 5, 'cy': 5, 'sr': 10, 'wh': 20, 'ri': 20,
                 'jr': 20, 'lr': 20, 'fg': 20, 'ss': 5, 'nr': 10, 'eg': 10, 'eb': 5, 'ur': 20, 'rr': 10, 'rs': 10,
                 'ap': 10, 'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10, 'pf': 5, 'bc': 5, 'lh': 16, 'pk': 5, 'si': 5,
-                'tl': 10000, 'ao': '20'}
+                'ao': 20, 'lc': 1, 'br': 5}
+
+
 # ---------------------------------------------------- 基础数据 结束 ----------------------------------------------------
 
 
@@ -84,13 +83,21 @@ def read_statement_files(dir_input=''):
                 statement_data_list.append(f.readlines())
     print(f'\n{datetime.now()} | 信息 | 已读取 {folder_name} 文件夹')
     return statement_data_list
+
+
 # ---------------------------------------------------- 数据读取 结束 ----------------------------------------------------
 
 
 # ---------------------------------------------------- 数据提取 开始 ----------------------------------------------------
 def data_extract(source, client_id=''):
+    def regular_expression_search(file, expression, start=0):
+        for ri in range(start, len(file)):
+            matched_obj = re.search(fr'{expression}', file[ri])
+            if matched_obj is not None:
+                return matched_obj
+
     if client_id == '':
-        client_id = re.search(r'[^客户号 ClientID：][0-9]+', source[0][8]).group()
+        client_id = regular_expression_search(source[0], r'^(客户号 Client ID)[：\s]*([0-9]+)').groups()[1]
     print(f'{datetime.now()} | 信息 | 开始客户号 {client_id} 的结算数据提取')
     account = pd.DataFrame(columns=['日期', '期初结存', '出入金', '平仓盈亏', '持仓盯市盈亏', '手续费', '期末结存',
                                     '客户权益', '保证金占用', '风险度'])
@@ -99,86 +106,119 @@ def data_extract(source, client_id=''):
     position_closed = pd.DataFrame(columns=['平仓日期', '交易所', '品种', '合约', '开仓日期', '买/卖', '手数', '开仓价',
                                             '昨结算', '成交价', '平仓盈亏', '权利金收支', '交易盈亏', '盈亏率'])
     sep = re.compile(r'[|\s|]+')
+
     for i in range(len(source)):
-        statement_date = re.search(r'[^日期 Date：][0-9][0-9][0-9][0-9][0-9][0-9][0-9]', source[i][10]).group()
-        is_new_version = True if pd.to_datetime(statement_date) >= datetime(2022, 9, 23) else False
-        if client_id != re.search(r'[^客户号 ClientID：][0-9]+', source[i][8]).group():
+        statement_date = regular_expression_search(source[i], r'^(日期 Date)[：\s]*([0-9]+)').groups()[1]
+        is_new_version = pd.to_datetime(statement_date) >= datetime(2022, 9, 23) or False
+        file_client_id = regular_expression_search(source[i], r'^(客户号 Client ID)[：\s]*([0-9]+)').groups()[1]
+        if file_client_id != client_id:
             input(f"{datetime.now()} | 错误 | {statement_date} 结算单客户号不正确, 请检查后重试, 按任意键退出!\n")
             raise SystemExit()
+        print(f'\r{datetime.now()} | 信息 | 提取 {statement_date} 结算数据', end='')
         for j in range(len(source[i])):
             if re.match(r'\s*资金状况', source[i][j]):
-                client_equity = float(source[i][j + 10][65:-1].strip())
-                margin_occupied = float(source[i][j + 14][70:-1].strip())
+                client_equity = float(regular_expression_search(source[i],
+                                                                r'(客户权益 Client Equity)[：\s]*([0-9\.]+)',
+                                                                start=j).groups()[1])
+                margin_occupied = float(regular_expression_search(source[i],
+                                                                  r'(保证金占用 Margin Occupied)[：\s]*([0-9\.]+)',
+                                                                  start=j).groups()[1])
                 data = {'日期': pd.to_datetime(statement_date),
-                        '期初结存': float(source[i][j + 4][17:45].strip()),
-                        '出入金': float(source[i][j + 6][25:47].strip()),
-                        '平仓盈亏': float(source[i][j + 8][18:46].strip()),
-                        '持仓盯市盈亏': float(source[i][j + 10][15:44].strip()),
-                        '手续费': float(source[i][j + 14][17:46].strip()),
-                        '期末结存': float(source[i][j + 6][65:-1].strip()),
+                        '期初结存': float(
+                            regular_expression_search(source[i], r'(期初结存 Balance b/f)[：\s]*([0-9\.]+)',
+                                                      start=j).groups()[1]),
+                        '出入金': float(
+                            regular_expression_search(source[i], r'(出 入 金 Deposit/Withdrawal)[：\s]*([-0-9\.]+)',
+                                                      start=j).groups()[1]),
+                        '平仓盈亏': float(
+                            regular_expression_search(source[i], r'(平仓盈亏 Realized P/L)[：\s]*([-0-9\.]+)',
+                                                      start=j).groups()[1]),
+                        '持仓盯市盈亏': float(
+                            regular_expression_search(source[i], r'(持仓盯市盈亏 MTM P/L)[：\s]*([-0-9\.]+)',
+                                                      start=j).groups()[1]),
+                        '手续费': float(
+                            regular_expression_search(source[i], r'(手 续 费 Commission)[：\s]*([0-9\.]+)',
+                                                      start=j).groups()[1]),
+                        '期末结存': float(
+                            regular_expression_search(source[i], r'(期末结存 Balance c/f)[：\s]*([0-9\.]+)',
+                                                      start=j).groups()[1]),
                         '客户权益': client_equity,
                         '保证金占用': margin_occupied,
                         '风险度': margin_occupied / client_equity}
                 df = pd.DataFrame([data])
                 account = pd.concat([account, df], ignore_index=True)
-        for j in range(len(source[i])):
             if re.match(r'\s*成交记录 Transaction Record', source[i][j]):
-                for ldx in range(j + 10, len(source[i])):
-                    if re.match(r'^-', source[i][ldx]):
-                        break
+                separator_count = 0
+                for ldx in range(j, len(source[i])):
                     if re.match(r'^\n', source[i][ldx]):
                         continue
-                    row = sep.split(source[i][ldx])
-                    data = {'成交日期': pd.to_datetime(row[1]),
-                            '交易所': row[3] if is_new_version else row[2],
-                            '品种': row[5] if is_new_version else row[3],
-                            '合约': row[6] if is_new_version else row[4],
-                            '买/卖': row[7] if is_new_version else row[5],
-                            '投/保': row[8] if is_new_version else row[6],
-                            '成交价': float(row[9]) if is_new_version else float(row[7]),
-                            '手数': int(row[10]) if is_new_version else int(row[8]),
-                            '成交额': float(row[11]) if is_new_version else float(row[9]),
-                            '开/平': row[12] if is_new_version else row[10],
-                            '手续费': float(row[13]) if is_new_version else float(row[11]),
-                            '平仓盈亏': float(row[14]) if is_new_version else float(row[12]),
-                            '权利金收支': float(row[15]) if is_new_version else float(row[13]),
-                            '成交序号': int(row[16]) if is_new_version else int(row[14])}
-                    df = pd.DataFrame([data])
-                    transaction_record = pd.concat([transaction_record, df], ignore_index=True)
-        for j in range(len(source[i])):
+                    if re.match(r'^-', source[i][ldx]):
+                        separator_count += 1
+                        if separator_count == 2:
+                            continue
+                        elif separator_count == 3:
+                            break
+                    if separator_count == 2:
+                        row = sep.split(source[i][ldx])
+                        data = {'成交日期': pd.to_datetime(row[1]),
+                                '交易所': row[3] if is_new_version else row[2],
+                                '品种': row[5] if is_new_version else row[3],
+                                '合约': row[6] if is_new_version else row[4],
+                                '买/卖': row[7] if is_new_version else row[5],
+                                '投/保': row[8] if is_new_version else row[6],
+                                '成交价': float(row[9]) if is_new_version else float(row[7]),
+                                '手数': int(row[10]) if is_new_version else int(row[8]),
+                                '成交额': float(row[11]) if is_new_version else float(row[9]),
+                                '开/平': row[12] if is_new_version else row[10],
+                                '手续费': float(row[13]) if is_new_version else float(row[11]),
+                                '平仓盈亏': float(row[14]) if is_new_version else float(row[12]),
+                                '权利金收支': float(row[15]) if is_new_version else float(row[13]),
+                                '成交序号': int(row[16]) if is_new_version else int(row[14])}
+                        df = pd.DataFrame([data])
+                        transaction_record = pd.concat([transaction_record, df], ignore_index=True)
             if re.match(r'\s*平仓明细 Position Closed', source[i][j]):
-                for ldx in range(j + 10, len(source[i])):
-                    if re.match(r'^-', source[i][ldx]):
-                        break
+                separator_count = 0
+                for ldx in range(j, len(source[i])):
                     if re.match(r'^\n', source[i][ldx]):
                         continue
-                    row = sep.split(source[i][ldx])
-                    instrument = row[6] if is_new_version else row[4]
-                    b_s = row[9] if is_new_version else row[6]
-                    lots = int(row[10]) if is_new_version else int(row[7])
-                    open_price = float(row[11]) if is_new_version else float(row[8])
-                    transaction_price = float(row[13]) if is_new_version else float(row[10])
-                    price_margin = transaction_price - open_price if b_s == '卖' else open_price - transaction_price
-                    data = {'平仓日期': pd.to_datetime(row[1]),
-                            '交易所': row[3] if is_new_version else row[2],
-                            '品种': row[5] if is_new_version else row[3],
-                            '合约': instrument,
-                            '开仓日期': pd.to_datetime(row[7]) if is_new_version else pd.to_datetime(row[5]),
-                            '买/卖': b_s,
-                            '手数': lots,
-                            '开仓价': open_price,
-                            '昨结算': float(row[12]) if is_new_version else float(row[9]),
-                            '成交价': transaction_price,
-                            '平仓盈亏': float(row[14]) if is_new_version else float(row[11]),
-                            '权利金收支': float(row[15]) if is_new_version else float(row[12]),
-                            '交易盈亏': price_margin * lots * TRADING_UNIT[re.sub(r'[^A-Za-z]', '', instrument).lower()],
-                            '盈亏率': price_margin / open_price}
-                    df = pd.DataFrame([data])
-                    position_closed = pd.concat([position_closed, df], ignore_index=True)
-                    position_closed['持仓天数'] = position_closed['平仓日期'] - position_closed['开仓日期']
-                    position_closed['持仓天数'].apply(lambda x: x.days)
-    print(f'{datetime.now()} | 信息 | 已提取所有结算单数据')
+                    if re.match(r'^-', source[i][ldx]):
+                        separator_count += 1
+                        if separator_count == 2:
+                            continue
+                        elif separator_count == 3:
+                            break
+                    if separator_count == 2:
+                        row = sep.split(source[i][ldx])
+                        instrument = row[6] if is_new_version else row[4]
+                        b_s = row[9] if is_new_version else row[6]
+                        lots = int(row[10]) if is_new_version else int(row[7])
+                        open_price = float(row[11]) if is_new_version else float(row[8])
+                        transaction_price = float(row[13]) if is_new_version else float(row[10])
+                        price_margin = transaction_price - open_price if b_s == '卖' else open_price - transaction_price
+                        data = {'平仓日期': pd.to_datetime(row[1]),
+                                '交易所': row[3] if is_new_version else row[2],
+                                '品种': row[5] if is_new_version else row[3],
+                                '合约': instrument,
+                                '开仓日期': pd.to_datetime(row[7]) if is_new_version else pd.to_datetime(row[5]),
+                                '买/卖': b_s,
+                                '手数': lots,
+                                '开仓价': open_price,
+                                '昨结算': float(row[12]) if is_new_version else float(row[9]),
+                                '成交价': transaction_price,
+                                '平仓盈亏': float(row[14]) if is_new_version else float(row[11]),
+                                '权利金收支': float(row[15]) if is_new_version else float(row[12]),
+                                '交易盈亏': price_margin * lots * TRADING_UNIT[
+                                    re.sub(r'[^A-Za-z]', '', instrument).lower()],
+                                '盈亏率': price_margin / open_price}
+                        df = pd.DataFrame([data])
+                        position_closed = pd.concat([position_closed, df], ignore_index=True)
+                        position_closed['持仓天数'] = position_closed['平仓日期'] - position_closed['开仓日期']
+                        position_closed['持仓天数'].apply(lambda x: x.days)
+    print(f'\n{datetime.now()} | 信息 | 已提取所有结算单数据')
+
     return client_id, account, transaction_record, position_closed
+
+
 # ---------------------------------------------------- 数据提取 结束 ----------------------------------------------------
 
 
@@ -211,32 +251,40 @@ def net_worth_calc(account):
 
 def data_statistic(transaction_record, position_closed):
     print(f'{datetime.now()} | 信息 | 开始数据统计')
-    statistic_by_contracts = pd.DataFrame(columns=['品种', '合约', '平仓盈亏', '净利润', '交易次数', '交易手数', '盈利次数',
-                                                   '盈利手数', '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '最大盈利',
-                                                   '最大亏损', '成交额'])
+    statistic_by_contracts = pd.DataFrame(
+        columns=['品种', '合约', '平仓盈亏', '净利润', '交易次数', '交易手数', '盈利次数',
+                 '盈利手数', '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '最大盈利',
+                 '最大亏损', '成交额'])
     position_closed_group_by_contracts = position_closed.groupby('合约')
     statistic_by_contracts['合约'] = position_closed_group_by_contracts.groups.keys()
     statistic_by_contracts = statistic_by_contracts.set_index('合约')
     for index in statistic_by_contracts.index:
         statistic_by_contracts.loc[index]['品种'] = CONTRACT_CODE[re.sub(r'[^A-Za-z]', '', index).lower()]
     statistic_by_contracts['平仓盈亏'] = position_closed_group_by_contracts['交易盈亏'].sum().astype('float64')
-    statistic_by_contracts['净利润'] = position_closed_group_by_contracts['交易盈亏'].sum().astype('float64') - transaction_record.groupby('合约')['手续费'].sum().astype('float64')
+    statistic_by_contracts['净利润'] = position_closed_group_by_contracts['交易盈亏'].sum().astype('float64') - \
+                                       transaction_record.groupby('合约')['手续费'].sum().astype('float64')
     statistic_by_contracts['交易次数'] = position_closed_group_by_contracts['品种'].count().astype('int64')
     statistic_by_contracts['交易手数'] = position_closed_group_by_contracts['手数'].sum().astype('int64')
     statistic_by_contracts['盈利次数'] = position_closed_group_by_contracts.apply(lambda x: sum(x['交易盈亏'] > 0))
-    statistic_by_contracts['盈利手数'] = position_closed_group_by_contracts.apply(lambda x: sum(x[x['交易盈亏'] > 0]['手数']))
-    statistic_by_contracts['交易成功率'] = round(statistic_by_contracts['盈利次数'] / statistic_by_contracts['交易次数'], 4)
-    statistic_by_contracts['交易盈亏率'] = round(statistic_by_contracts['盈利手数'] / statistic_by_contracts['交易手数'], 4)
-    statistic_by_contracts['均次盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易次数'], 2)
-    statistic_by_contracts['均手盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易手数'], 2)
+    statistic_by_contracts['盈利手数'] = position_closed_group_by_contracts.apply(
+        lambda x: sum(x[x['交易盈亏'] > 0]['手数']))
+    statistic_by_contracts['交易成功率'] = round(
+        statistic_by_contracts['盈利次数'] / statistic_by_contracts['交易次数'], 4)
+    statistic_by_contracts['交易盈亏率'] = round(
+        statistic_by_contracts['盈利手数'] / statistic_by_contracts['交易手数'], 4)
+    statistic_by_contracts['均次盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易次数'],
+                                               2)
+    statistic_by_contracts['均手盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易手数'],
+                                               2)
     statistic_by_contracts['最大盈利'] = position_closed_group_by_contracts.apply(lambda x: max(x['交易盈亏']))
     statistic_by_contracts['最大亏损'] = position_closed_group_by_contracts.apply(lambda x: min(x['交易盈亏']))
     statistic_by_contracts['成交额'] = transaction_record.groupby('合约')['成交额'].sum().astype('float64')
     statistic_by_contracts = statistic_by_contracts.reset_index()
 
-    statistic_by_categories = pd.DataFrame(columns=['品种', '平仓盈亏', '净利润', '交易次数', '交易手数', '盈利次数', '盈利手数',
-                                                    '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '最大盈利', '最大亏损',
-                                                    '成交额'])
+    statistic_by_categories = pd.DataFrame(
+        columns=['品种', '平仓盈亏', '净利润', '交易次数', '交易手数', '盈利次数', '盈利手数',
+                 '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '最大盈利', '最大亏损',
+                 '成交额'])
     contracts_analysis_group_by_categories = statistic_by_contracts.groupby('品种')
     statistic_by_categories['品种'] = contracts_analysis_group_by_categories.groups.keys()
     statistic_by_categories = statistic_by_categories.set_index('品种')
@@ -246,19 +294,24 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_categories['交易手数'] = contracts_analysis_group_by_categories['交易手数'].sum()
     statistic_by_categories['盈利次数'] = contracts_analysis_group_by_categories['盈利次数'].sum()
     statistic_by_categories['盈利手数'] = contracts_analysis_group_by_categories['盈利手数'].sum()
-    statistic_by_categories['交易成功率'] = round(statistic_by_categories['盈利次数'] / statistic_by_categories['交易次数'], 4)
-    statistic_by_categories['交易盈亏率'] = round(statistic_by_categories['盈利手数'] / statistic_by_categories['交易手数'], 4)
-    statistic_by_categories['均次盈亏'] = round(statistic_by_categories['平仓盈亏'] / statistic_by_categories['交易次数'], 2)
-    statistic_by_categories['均手盈亏'] = round(statistic_by_categories['平仓盈亏'] / statistic_by_categories['交易手数'], 2)
+    statistic_by_categories['交易成功率'] = round(
+        statistic_by_categories['盈利次数'] / statistic_by_categories['交易次数'], 4)
+    statistic_by_categories['交易盈亏率'] = round(
+        statistic_by_categories['盈利手数'] / statistic_by_categories['交易手数'], 4)
+    statistic_by_categories['均次盈亏'] = round(
+        statistic_by_categories['平仓盈亏'] / statistic_by_categories['交易次数'], 2)
+    statistic_by_categories['均手盈亏'] = round(
+        statistic_by_categories['平仓盈亏'] / statistic_by_categories['交易手数'], 2)
     statistic_by_categories['最大盈利'] = contracts_analysis_group_by_categories.apply(lambda x: max(x['最大盈利']))
     statistic_by_categories['最大亏损'] = contracts_analysis_group_by_categories.apply(lambda x: min(x['最大亏损']))
     statistic_by_categories['成交额'] = contracts_analysis_group_by_categories['成交额'].sum()
     statistic_by_categories = statistic_by_categories.reset_index()
 
-    statistic_by_trade_direction = pd.DataFrame(columns=['统计指标', '总盈利', '总亏损', '总盈利/总亏损', '手续费', '净利润',
-                                                         '盈利比率', '盈利手数', '亏损手数', '持平手数', '平均盈利', '平均亏损',
-                                                         '平均盈利/平均亏损', '平均手续费', '平均净利润', '最大盈利', '最大亏损',
-                                                         '最大盈利/总盈利', '最大亏损/总亏损', '净利润/最大亏损'])
+    statistic_by_trade_direction = pd.DataFrame(
+        columns=['统计指标', '总盈利', '总亏损', '总盈利/总亏损', '手续费', '净利润',
+                 '盈利比率', '盈利手数', '亏损手数', '持平手数', '平均盈利', '平均亏损',
+                 '平均盈利/平均亏损', '平均手续费', '平均净利润', '最大盈利', '最大亏损',
+                 '最大盈利/总盈利', '最大亏损/总亏损', '净利润/最大亏损'])
     position_closed_group_by_trade_direction = position_closed.groupby('买/卖')
     statistic_by_trade_direction['统计指标'] = position_closed_group_by_trade_direction.groups.keys()
     statistic_by_trade_direction = statistic_by_trade_direction.set_index('统计指标')
@@ -269,7 +322,8 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction['总盈利/总亏损'] = round(
         abs(statistic_by_trade_direction['总盈利'] / statistic_by_trade_direction['总亏损']), 4)
     statistic_by_trade_direction['手续费'] = transaction_record.groupby('买/卖')['手续费'].sum().astype('float64')
-    statistic_by_trade_direction['净利润'] = statistic_by_trade_direction['总盈利'] + statistic_by_trade_direction['总亏损'] - transaction_record.groupby('买/卖')['手续费'].sum().astype('float64')
+    statistic_by_trade_direction['净利润'] = statistic_by_trade_direction['总盈利'] + statistic_by_trade_direction[
+        '总亏损'] - transaction_record.groupby('买/卖')['手续费'].sum().astype('float64')
     statistic_by_trade_direction['盈利手数'] = position_closed_group_by_trade_direction.apply(
         lambda x: sum(x[x['交易盈亏'] > 0]['手数']))
     statistic_by_trade_direction['亏损手数'] = position_closed_group_by_trade_direction.apply(
@@ -277,8 +331,8 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction['持平手数'] = position_closed_group_by_trade_direction.apply(
         lambda x: sum(x[x['交易盈亏'] == 0]['手数']))
     statistic_by_trade_direction['盈利比率'] = round(statistic_by_trade_direction['盈利手数'] / (
-            statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
-            statistic_by_trade_direction['持平手数']), 4)
+                statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
+                statistic_by_trade_direction['持平手数']), 4)
     statistic_by_trade_direction['平均盈利'] = round(
         statistic_by_trade_direction['总盈利'] / statistic_by_trade_direction['盈利手数'], 2)
     statistic_by_trade_direction['平均亏损'] = round(
@@ -286,10 +340,11 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction['平均盈利/平均亏损'] = round(
         abs(statistic_by_trade_direction['平均盈利'] / statistic_by_trade_direction['平均亏损']), 4)
     statistic_by_trade_direction['平均手续费'] = round(statistic_by_trade_direction['手续费'] / (
-            statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
-            statistic_by_trade_direction['持平手数']), 2)
-    statistic_by_trade_direction['平均净利润'] = statistic_by_trade_direction['平均盈利'] + statistic_by_trade_direction[
-        '平均亏损'] - statistic_by_trade_direction['平均手续费']
+                statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
+                statistic_by_trade_direction['持平手数']), 2)
+    statistic_by_trade_direction['平均净利润'] = statistic_by_trade_direction['平均盈利'] + \
+                                                 statistic_by_trade_direction['平均亏损'] - \
+                                                 statistic_by_trade_direction['平均手续费']
     statistic_by_trade_direction['最大盈利'] = position_closed_group_by_trade_direction['交易盈亏'].max()
     statistic_by_trade_direction['最大亏损'] = position_closed_group_by_trade_direction['交易盈亏'].min()
     statistic_by_trade_direction['最大盈利/总盈利'] = round(
@@ -301,6 +356,8 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction = statistic_by_trade_direction.reset_index()
     print(f'{datetime.now()} | 信息 | 已完成数据统计')
     return statistic_by_contracts, statistic_by_categories, statistic_by_trade_direction
+
+
 # ---------------------------------------------------- 数据统计 结束 ----------------------------------------------------
 
 
@@ -319,8 +376,7 @@ def excel_data_format(excel_file):
                     column_dataset[row_index].number_format = numbers.FORMAT_DATE_YYYYMMDD2
                 elif '风险度' in header or '率' in header or '/' in header:
                     column_dataset[row_index].number_format = numbers.FORMAT_PERCENTAGE_00
-                elif '利润' in header or '盈亏' in header or '结存' in header or '权益' in header or '保证金' in header \
-                        or '出入金' in header or '成交额' in header:
+                elif '利润' in header or '盈亏' in header or '结存' in header or '权益' in header or '保证金' in header or '出入金' in header or '成交额' in header:
                     column_dataset[row_index].number_format = numbers.BUILTIN_FORMATS[39]
 
     def cell_format_by_rows(worksheet):
@@ -336,8 +392,7 @@ def excel_data_format(excel_file):
                     row_dataset[column_index].number_format = numbers.FORMAT_DATE_YYYYMMDD2
                 elif '风险度' in header or '率' in header or '/' in header:
                     row_dataset[column_index].number_format = numbers.FORMAT_PERCENTAGE_00
-                elif '利润' in header or '盈亏' in header or '结存' in header or '权益' in header or '保证金' in header \
-                        or '出入金' in header or '成交额' in header:
+                elif '利润' in header or '盈亏' in header or '结存' in header or '权益' in header or '保证金' in header or '出入金' in header or '成交额' in header:
                     row_dataset[column_index].number_format = numbers.BUILTIN_FORMATS[39]
 
     def dimension_format(worksheet, dimension='columns'):
@@ -395,6 +450,8 @@ def excel_data_format(excel_file):
     wb.save(excel_file)
     wb.close()
     print(f'{datetime.now()} | 信息 | 已生成Excel数据表')
+
+
 # --------------------------------------------------- 数据格式化 结束 ---------------------------------------------------
 
 
@@ -483,6 +540,8 @@ def excel_create_chart(excel_file):
     wb.close()
     # 输出信息
     print(f'{datetime.now()} | 信息 | 已生成Excel图表')
+
+
 # ---------------------------------------------------- 生成图表 结束 ----------------------------------------------------
 
 
@@ -490,7 +549,8 @@ def excel_create_chart(excel_file):
 def output_excel(net_worth, account, transaction_record, position_closed, contracts_analysis, categories_analysis,
                  trade_direction_analysis, client_id=''):
     try:
-        with pd.ExcelWriter(os.path.join(BASE_DIR, client_id + '交易统计.xlsx'), mode='w',
+        with pd.ExcelWriter(os.path.join(BASE_DIR, client_id + '交易统计.xlsx'),
+                            mode='w',
                             engine="openpyxl") as writer:
             net_worth.to_excel(writer, sheet_name='账户净值', index=False)
             account.to_excel(writer, sheet_name='账户统计', index=False)
@@ -506,6 +566,8 @@ def output_excel(net_worth, account, transaction_record, position_closed, contra
     except PermissionError:
         input(f'{datetime.now()} | 错误 | 分析结果写入Excel被拒绝, 请检查文件是否已打开, 按任意键退出!\n')
         # raise SystemExit()
+
+
 # -------------------------------------------------- 生成excel文件 结束 -------------------------------------------------
 
 
@@ -516,12 +578,14 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv, "hd:i:", ["dir=", "id="])
     except getopt.GetoptError:
-        print('参数选项:\n-d/--dir <settlement statement files\' folder  结算单文件夹路径>\n-i/--id <client id  客户号>')
+        print(
+            '参数选项:\n-d/--dir <settlement statement files\' folder  结算单文件夹路径>\n-i/--id <client id  客户号>')
         sys.exit(2)
     if len(opts) != 0:
         for opt, arg in opts:
             if opt == '-h':
-                print('参数选项:\n-d/--dir <settlement statement files\' folder  结算单文件夹路径>\n-i/--id <client id  客户号>')
+                print(
+                    '参数选项:\n-d/--dir <settlement statement files\' folder  结算单文件夹路径>\n-i/--id <client id  客户号>')
                 sys.exit()
             elif opt in ("-d", "--dir"):
                 files_folder = arg
