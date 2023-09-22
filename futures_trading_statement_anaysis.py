@@ -28,26 +28,26 @@ from openpyxl.chart.layout import Layout, ManualLayout
 BASE_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 CONTRACT_CODE = {'if': '沪深300股指', 'ih': '上证50股指', 'ic': '中证500股指', 'im': '中证1000股指', 'tf': '五债', 't': '十债',
-                 'ts': '二债', 'cu': '铜', 'al': '铝', 'zn': '锌', 'pb': '铅', 'ni': '镍', 'sn': '锡', 'au': '黄金', 
-                 'ag': '白银', 'j': '焦炭', 'jm': '焦煤', 'zc': '动力煤ZC', 'rb': '螺纹钢', 'i': '铁矿石', 'hc': '热轧卷板', 
-                 'sf': '硅铁', 'sm': '锰硅', 'fg': '玻璃', 'ss': '不锈钢', 'wr': '线材', 'ru': '天然橡胶', 'sp': '漂针浆', 
-                 'bb': '细木工板', 'fb': '纤维板', 'nr': '20号胶', 'fu': '燃料油', 'bu': '石油沥青', 'l': '线型低密度聚乙烯', 
-                 'pp': '聚丙烯', 'v': '聚氯乙烯', 'ta': '精对苯二甲酸', 'ma': '甲醇MA', 'eg': '乙二醇', 'eb': '苯乙烯', 
-                 'ur': '尿素', 'sa': '纯碱', 'pg': '液化石油气', 'lu': '低硫燃料油', 'm': '豆粕', 'y': '豆油', 'oi': '菜籽油', 
-                 'a': '黄大豆1号', 'b': '黄大豆2号', 'p': '棕榈油', 'c': '黄玉米', 'rm': '菜籽粕', 'cs': '玉米淀粉', 
-                 'cf': '一号棉花', 'cy': '棉纱', 'sr': '白砂糖', 'wh': '强筋小麦', 'ri': '旱籼稻', 'rr': '粳米', 'rs': '油菜籽', 
-                 'jr': '粳稻谷', 'lr': '晚籼稻', 'pm': '普通小麦', 'sc': '原油', 'ap': '鲜苹果', 'jd': '鲜鸡蛋', 
-                 'cj': '干制红枣', 'pf': '短纤', 'bc': '国际铜', 'lh': '生猪', 'pk': '花生', 'si': '工业硅', 'ao': '氧化铝', 
-                 'lc': '碳酸锂', 'br': 'BR橡胶'}
+                 'ts': '二债', 'tl': '三十债', 'cu': '铜', 'al': '铝', 'zn': '锌', 'pb': '铅', 'ni': '镍', 'sn': '锡',
+                 'au': '黄金', 'ag': '白银', 'j': '焦炭', 'jm': '焦煤', 'zc': '动力煤ZC', 'rb': '螺纹钢', 'i': '铁矿石',
+                 'hc': '热轧卷板', 'sf': '硅铁', 'sm': '锰硅', 'fg': '玻璃', 'ss': '不锈钢', 'wr': '线材', 'ru': '天然橡胶',
+                 'sp': '漂针浆', 'bb': '细木工板', 'fb': '纤维板', 'nr': '20号胶', 'fu': '燃料油', 'bu': '石油沥青',
+                 'l': '线型低密度聚乙烯', 'pp': '聚丙烯', 'v': '聚氯乙烯', 'ta': '精对苯二甲酸', 'ma': '甲醇MA', 'eg': '乙二醇',
+                 'eb': '苯乙烯', 'ur': '尿素', 'sa': '纯碱', 'pg': '液化石油气', 'lu': '低硫燃料油', 'm': '豆粕', 'y': '豆油',
+                 'oi': '菜籽油', 'a': '黄大豆1号', 'b': '黄大豆2号', 'p': '棕榈油', 'c': '黄玉米', 'rm': '菜籽粕',
+                 'cs': '玉米淀粉', 'cf': '一号棉花', 'cy': '棉纱', 'sr': '白砂糖', 'wh': '强筋小麦', 'ri': '旱籼稻',
+                 'rr': '粳米', 'rs': '油菜籽', 'jr': '粳稻谷', 'lr': '晚籼稻', 'pm': '普通小麦', 'sc': '原油', 'ap': '鲜苹果',
+                 'jd': '鲜鸡蛋', 'cj': '干制红枣', 'pf': '短纤', 'bc': '国际铜', 'lh': '生猪', 'pk': '花生', 'si': '工业硅',
+                 'ao': '氧化铝', 'lc': '碳酸锂', 'br': 'BR橡胶', 'ec': '集运欧线', 'px': '对二甲苯', 'sh': '烧碱'}
 
-TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'im': 200, 'tf': 10000, 't': 10000, 'ts': 20000, 'cu': 5, 'al': 5,
-                'zn': 5, 'sc': 1000, 'pb': 5, 'ni': 1, 'sn': 1, 'au': 1000, 'ag': 15, 'j': 100, 'jm': 60, 'zc': 100,
-                'rb': 10, 'i': 100, 'hc': 10, 'sf': 5, 'sm': 5, 'wr': 10, 'fu': 10, 'bu': 10, 'ru': 10, 'l': 5, 'pp': 5,
-                'v': 5, 'ta': 5, 'ma': 10, 'sp': 10, 'm': 10, 'y': 10, 'oi': 10, 'a': 10, 'b': 10, 'p': 10, 'c': 10,
-                'rm': 10, 'cs': 10, 'jd': 10, 'bb': 500, 'fb': 500, 'cf': 5, 'cy': 5, 'sr': 10, 'wh': 20, 'ri': 20,
-                'jr': 20, 'lr': 20, 'fg': 20, 'ss': 5, 'nr': 10, 'eg': 10, 'eb': 5, 'ur': 20, 'rr': 10, 'rs': 10,
-                'ap': 10, 'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10, 'pf': 5, 'bc': 5, 'lh': 16, 'pk': 5, 'si': 5,
-                'ao': 20, 'lc': 1, 'br': 5}
+TRADING_UNIT = {'if': 300, 'ih': 300, 'ic': 200, 'im': 200, 'tf': 10000, 't': 10000, 'ts': 20000, 'tl': 10000, 'cu': 5,
+                'al': 5, 'zn': 5, 'sc': 1000, 'pb': 5, 'ni': 1, 'sn': 1, 'au': 1000, 'ag': 15, 'j': 100, 'jm': 60,
+                'zc': 100, 'rb': 10, 'i': 100, 'hc': 10, 'sf': 5, 'sm': 5, 'wr': 10, 'fu': 10, 'bu': 10, 'ru': 10,
+                'l': 5, 'pp': 5, 'v': 5, 'ta': 5, 'ma': 10, 'sp': 10, 'm': 10, 'y': 10, 'oi': 10, 'a': 10, 'b': 10,
+                'p': 10, 'c': 10, 'rm': 10, 'cs': 10, 'jd': 10, 'bb': 500, 'fb': 500, 'cf': 5, 'cy': 5, 'sr': 10,
+                'wh': 20, 'ri': 20, 'jr': 20, 'lr': 20, 'fg': 20, 'ss': 5, 'nr': 10, 'eg': 10, 'eb': 5, 'ur': 20,
+                'rr': 10, 'rs': 10, 'ap': 10, 'cj': 5, 'pm': 50, 'sa': 20, 'pg': 20, 'lu': 10, 'pf': 5, 'bc': 5,
+                'lh': 16, 'pk': 5, 'si': 5, 'ao': 20, 'lc': 1, 'br': 5, 'ec': 50, 'px': 5, 'sh': 30}
 
 
 # ---------------------------------------------------- 基础数据 结束 ----------------------------------------------------
@@ -79,8 +79,12 @@ def read_statement_files(dir_input=''):
     for file in files_list:
         file_dir = os.path.join(path, file)
         if os.path.isfile(file_dir):
-            with open(file_dir) as f:
-                statement_data_list.append(f.readlines())
+            try:
+                with open(file_dir) as f:
+                    statement_data_list.append(f.readlines())
+            except UnicodeDecodeError:
+                with open(file_dir, encoding='gb18030') as f:
+                    statement_data_list.append(f.readlines())
     print(f'\n{datetime.now()} | 信息 | 已读取 {folder_name} 文件夹')
     return statement_data_list
 
@@ -272,12 +276,12 @@ def data_statistic(transaction_record, position_closed):
         statistic_by_contracts['盈利次数'] / statistic_by_contracts['交易次数'], 4)
     statistic_by_contracts['交易盈亏率'] = round(
         statistic_by_contracts['盈利手数'] / statistic_by_contracts['交易手数'], 4)
-    statistic_by_contracts['均次盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易次数'],
-                                               2)
-    statistic_by_contracts['均手盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易手数'],
-                                               2)
-    statistic_by_contracts['最大盈利'] = position_closed_group_by_contracts.apply(lambda x: max(x['交易盈亏']))
-    statistic_by_contracts['最大亏损'] = position_closed_group_by_contracts.apply(lambda x: min(x['交易盈亏']))
+    statistic_by_contracts['均次盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易次数'], 2)
+    statistic_by_contracts['均手盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易手数'], 2)
+    statistic_by_contracts['最大盈利'] = position_closed_group_by_contracts.apply(
+        lambda x: max(max(x['交易盈亏']), 0))
+    statistic_by_contracts['最大亏损'] = position_closed_group_by_contracts.apply(
+        lambda x: min(min(x['交易盈亏']), 0))
     statistic_by_contracts['成交额'] = transaction_record.groupby('合约')['成交额'].sum().astype('float64')
     statistic_by_contracts = statistic_by_contracts.reset_index()
 
@@ -302,8 +306,10 @@ def data_statistic(transaction_record, position_closed):
         statistic_by_categories['平仓盈亏'] / statistic_by_categories['交易次数'], 2)
     statistic_by_categories['均手盈亏'] = round(
         statistic_by_categories['平仓盈亏'] / statistic_by_categories['交易手数'], 2)
-    statistic_by_categories['最大盈利'] = contracts_analysis_group_by_categories.apply(lambda x: max(x['最大盈利']))
-    statistic_by_categories['最大亏损'] = contracts_analysis_group_by_categories.apply(lambda x: min(x['最大亏损']))
+    statistic_by_categories['最大盈利'] = contracts_analysis_group_by_categories.apply(
+        lambda x: max(max(x['最大盈利']), 0))
+    statistic_by_categories['最大亏损'] = contracts_analysis_group_by_categories.apply(
+        lambda x: min(min(x['最大亏损']), 0))
     statistic_by_categories['成交额'] = contracts_analysis_group_by_categories['成交额'].sum()
     statistic_by_categories = statistic_by_categories.reset_index()
 
@@ -331,8 +337,8 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction['持平手数'] = position_closed_group_by_trade_direction.apply(
         lambda x: sum(x[x['交易盈亏'] == 0]['手数']))
     statistic_by_trade_direction['盈利比率'] = round(statistic_by_trade_direction['盈利手数'] / (
-                statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
-                statistic_by_trade_direction['持平手数']), 4)
+            statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
+            statistic_by_trade_direction['持平手数']), 4)
     statistic_by_trade_direction['平均盈利'] = round(
         statistic_by_trade_direction['总盈利'] / statistic_by_trade_direction['盈利手数'], 2)
     statistic_by_trade_direction['平均亏损'] = round(
@@ -340,8 +346,8 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction['平均盈利/平均亏损'] = round(
         abs(statistic_by_trade_direction['平均盈利'] / statistic_by_trade_direction['平均亏损']), 4)
     statistic_by_trade_direction['平均手续费'] = round(statistic_by_trade_direction['手续费'] / (
-                statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
-                statistic_by_trade_direction['持平手数']), 2)
+            statistic_by_trade_direction['盈利手数'] + statistic_by_trade_direction['亏损手数'] +
+            statistic_by_trade_direction['持平手数']), 2)
     statistic_by_trade_direction['平均净利润'] = statistic_by_trade_direction['平均盈利'] + \
                                                  statistic_by_trade_direction['平均亏损'] - \
                                                  statistic_by_trade_direction['平均手续费']
@@ -374,9 +380,11 @@ def excel_data_format(excel_file):
             for row_index in range(worksheet.min_row, worksheet.max_row):
                 if '日期' in header:
                     column_dataset[row_index].number_format = numbers.FORMAT_DATE_YYYYMMDD2
-                elif '风险度' in header or '率' in header or '/' in header:
+                elif any([c in header for c in ['风险度', '率', '/']]):
                     column_dataset[row_index].number_format = numbers.FORMAT_PERCENTAGE_00
-                elif '利润' in header or '盈亏' in header or '结存' in header or '权益' in header or '保证金' in header or '出入金' in header or '成交额' in header:
+                elif any([c in header for c in ['次数', '手数']]):
+                    column_dataset[row_index].number_format = numbers.FORMAT_NUMBER
+                elif any([c in header for c in ['利润', '盈亏', '盈利', '亏损', '结存', '权益', '保证金', '出入金', '成交额']]):
                     column_dataset[row_index].number_format = numbers.BUILTIN_FORMATS[39]
 
     def cell_format_by_rows(worksheet):
@@ -390,9 +398,11 @@ def excel_data_format(excel_file):
             for column_index in range(worksheet.min_column, worksheet.max_column):
                 if '日期' in header:
                     row_dataset[column_index].number_format = numbers.FORMAT_DATE_YYYYMMDD2
-                elif '风险度' in header or '率' in header or '/' in header:
+                elif any([c in header for c in ['风险度', '率', '/']]):
                     row_dataset[column_index].number_format = numbers.FORMAT_PERCENTAGE_00
-                elif '利润' in header or '盈亏' in header or '结存' in header or '权益' in header or '保证金' in header or '出入金' in header or '成交额' in header:
+                elif any([c in header for c in ['次数', '手数']]):
+                    row_dataset[column_index].number_format = numbers.FORMAT_NUMBER
+                elif any([c in header for c in ['利润', '盈亏', '盈利', '亏损', '结存', '权益', '保证金', '出入金', '成交额']]):
                     row_dataset[column_index].number_format = numbers.BUILTIN_FORMATS[39]
 
     def dimension_format(worksheet, dimension='columns'):
