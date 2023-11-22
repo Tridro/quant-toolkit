@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # @Time         : 2019/10/16 11:04
 # @Author       : Tridro
-# @Organization : Everbright Futures
 # @E-mail       : tridro@beneorigin.com
 # @File         : futures_trading_statement_anaysis.py
 # All CopyRight Reserved
@@ -13,8 +12,10 @@ import re
 import sys
 from datetime import datetime
 from itertools import islice
+from typing import Literal, Optional, Union
 
 import pandas as pd
+import numpy as np
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_interval
 from openpyxl.utils.dataframe import dataframe_to_rows
@@ -26,6 +27,9 @@ from openpyxl.chart.layout import Layout, ManualLayout
 
 # ---------------------------------------------------- 基础数据 开始 ----------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
+
+RISK_FREE_INTEREST_RATE: float = 0.0345
+STATISTIC_METHOD: str = 'log'
 
 CONTRACT_CODE = {'if': '沪深300股指', 'ih': '上证50股指', 'ic': '中证500股指', 'im': '中证1000股指', 'tf': '五债', 't': '十债',
                  'ts': '二债', 'tl': '三十债', 'cu': '铜', 'al': '铝', 'zn': '锌', 'pb': '铅', 'ni': '镍', 'sn': '锡',
@@ -227,18 +231,64 @@ def data_extract(source, client_id=''):
 
 
 # ---------------------------------------------------- 数据统计 开始 ----------------------------------------------------
-def net_worth_calc(account):
+def calculate_yield(net_worth: pd.Series, method: Literal['log', 'pct'] = STATISTIC_METHOD) -> pd.Series:
+    """
+    计算收益率
+    calculate yield
+
+    Args:
+        net_worth:
+        method:
+
+    Returns:
+
+    """
+    benchmark = net_worth.shift(1).fillna(method='ffill')
+    if method == 'pct':
+        return (net_worth / benchmark - 1).astype('float64')  # 百分比变动法计算
+    elif method == 'log':
+        return np.log(net_worth) - np.log(benchmark)  # 对数变动法计算
+    else:
+        raise ValueError(f"检测到{method}, 必须为 'pct'|'log' 之一")
+
+
+def convert_yield(net_yield: Union[pd.Series, float], to: Literal['log', 'pct'] = STATISTIC_METHOD) \
+        -> Union[pd.Series, float]:
+    """
+    在对数收益率和百分比收益率之间进行转换\n
+    convert yield between log return and percentage return\n
+
+    Args:
+        net_yield:
+        to:
+
+    Returns:
+         (pd.Series): yield
+    """
+    if to == 'log':
+        return np.log(net_yield + 1.0)
+    elif to == 'pct':
+        return np.exp(net_yield) - 1.0
+    else:
+        raise ValueError(f"检测到{to}, 必须为 'pct'|'log' 之一")
+
+
+def merge_with_benchmark(data, reference, method: Literal['log', 'pct'] = STATISTIC_METHOD, how='inner'):
+    data_temp = data
+    data_temp['收益率'] = calculate_yield(data, method=method).dropna()
+    reference_temp = reference
+    reference_temp['收益率'] = calculate_yield(reference, method=method).dropna()
+    return pd.merge(data_temp, reference_temp, on='日期', how=how)
+
+def net_worth_calc(account: pd.DataFrame, method: Literal['log', 'pct'] = STATISTIC_METHOD):
     print(f'{datetime.now()} | 信息 | 开始净值化处理')
-    net_worth = pd.DataFrame(columns=['日期', '总权益', '净值', '份额', '份额变动'])
+    net_worth = pd.DataFrame(columns=['日期', '总权益', '净值', '收益率', '份额', '份额变动'])
     net_worth['日期'] = account['日期']
     df = pd.merge(account, net_worth, on=['日期'])
-    df.loc[0, '净值'] = 1.0
     df['总权益'] = df['客户权益']
-    if df['期初结存'].iloc[0] != 0:
-        df.loc[0, '份额'] = (df.iloc[0]['期初结存'] + df.iloc[0]['出入金']) / df.iloc[0]['净值']
-    else:
-        df.loc[0, '份额'] = df.iloc[0]['出入金'] / df.iloc[0]['净值']
+    df.loc[0, '份额'] = (df.iloc[0]['期初结存'] + df.iloc[0]['出入金']) / 1.0
     df.loc[0, '份额变动'] = df.iloc[0]['份额']
+    df.loc[0, '净值'] = df.iloc[0]['总权益'] / df.iloc[0]['份额']
     for index in range(1, len(df.index)):
         if df.iloc[index]['出入金'] != 0:
             df.loc[index, '净值'] = (df.iloc[index]['总权益'] - df.iloc[index]['出入金']) / df.iloc[index - 1]['份额']
@@ -247,14 +297,464 @@ def net_worth_calc(account):
         else:
             df.loc[index, '净值'] = df.iloc[index]['总权益'] / df.iloc[index - 1]['份额']
             df.loc[index, '份额'] = df.iloc[index - 1]['份额']
+    df['收益率'] = calculate_yield(df['净值'].astype('float64'), method=method)
+    df.loc[0, '收益率'] = np.log(df.iloc[0]['净值']) if method == 'log' else df.iloc[0]['净值'] - 1.0
     df['份额变动'].fillna(0, inplace=True)
     net_worth = pd.DataFrame(df, columns=net_worth.columns)
     print(f'{datetime.now()} | 信息 | 已完成净值化处理')
     return net_worth
 
 
+def annual_attribution_statistic(net_worth: pd.DataFrame, benchmark: Optional[pd.DataFrame] = None,
+                                 method: Literal['log', 'pct'] = STATISTIC_METHOD):
+    def accumulated_return(data: pd.Series):
+        """
+        累积收益率
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        if data.name == '净值':
+            return (data.iloc[-1] - data.iloc[0]) / data.iloc[0]
+        elif data.name == '收益率':
+            if method == 'log':
+                return np.sum(data)
+            elif method == 'pct':
+                return np.prod(data + 1.0) - 1.0
+        else:
+            raise ValueError
+
+    def annual_return(data: pd.Series):
+        """
+        年化收益率
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        return np.power(1 + accumulated_return(data), 252 / len(data)) - 1
+
+    def historical_volatility(data: pd.Series):
+        """
+        波动率
+        收益率的标准差
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        ret = data  # 收益率序列
+        if data.name == "净值":
+            ret = calculate_yield(data, method=method).dropna()
+        rete = np.average(ret)
+        return np.sqrt(np.sum(np.square(ret - rete)) / (len(ret) - 1))  # 等价ret.std()
+
+    def annual_volatility(data: pd.Series):
+        """
+        年化波动率
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        return historical_volatility(data) * np.sqrt(252)
+
+    def downward_risk(data: pd.Series):
+        """
+        下行风险
+        负收益率的标准差
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        rfd = np.power(1 + RISK_FREE_INTEREST_RATE, 1 / 252) - 1
+        ret = data  # 收益率序列
+        if data.name == "净值":
+            ret = calculate_yield(data, method=method).dropna()
+        dif = ret - rfd
+        negative_dif = dif[dif < 0]
+        return np.sqrt(np.sum(np.square(negative_dif)) / (len(ret) - 1))
+
+    def annual_downward_risk(data: pd.Series):
+        """
+        年化下行风险
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        return downward_risk(data) * np.sqrt(252)
+
+    def max_drawdown(data: pd.Series):
+        """
+        最大回撤
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        if data.name == '净值':
+            maximums = np.maximum.accumulate(data)
+            return np.max(1 - data / maximums)
+        elif data.name == '收益率':
+            if method == 'log':
+                cum_yield = np.cumsum(data)
+                maximums = np.maximum.accumulate(cum_yield)
+                return np.max(maximums - cum_yield)
+            elif method == 'pct':
+                cum_yield = np.cumprod(data + 1.0)
+                maximums = np.maximum.accumulate(cum_yield)
+                return np.max(1 - data / maximums)
+
+    def historical_sharpe_ratio(data: pd.Series):
+        """
+        夏普比率
+        等于(策略平均收益率 - 无风险利率)/区间波动率, 代表资产组合承担单位风险获得的回报情况
+        若为正值, 代表可以获得的回报率高过波动风险; 若为负值, 代表操作风险大过于资产回报率
+        数值越大, 表现越好
+        [适用范围]: 当投资组合内的资产皆为风险性资产且分布为正态分布
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        rfd = np.power(1 + RISK_FREE_INTEREST_RATE, 1 / 252) - 1
+        ret = data  # 收益率序列
+        if data.name == "净值":
+            ret = calculate_yield(data, method=method).dropna()
+        rete = np.average(ret)
+        return (rete - rfd) / historical_volatility(data)
+
+    def annual_sharpe_ratio(data: pd.Series):
+        """
+        年化夏普比率
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        return (annual_return(data) - RISK_FREE_INTEREST_RATE) / annual_volatility(data)
+
+    def historical_sortino_ratio(data: pd.Series):
+        """
+        索提诺比率
+        与夏普比率类似, 不同的是它区分了波动的好坏, 在计算波动率时它所采用的不是标准差, 而是下行标准差
+        这其中的隐含条件是投资组合的上涨（正回报率）符合投资人的需求, 不应计入风险调整
+        数值越大, 业绩表现越好
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        rfd = np.power(1 + RISK_FREE_INTEREST_RATE, 1 / 252) - 1
+        ret = data  # 收益率序列
+        if data.name == "净值":
+            ret = calculate_yield(data, method=method).dropna()
+        rete = np.average(ret)
+        return (rete - rfd) / downward_risk(data)
+
+    def annual_sortino_ratio(data: pd.Series):
+        """
+        年化索提诺比率
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        return (annual_return(data) - RISK_FREE_INTEREST_RATE) / annual_downward_risk(data)
+
+    def calmar_ratio(data: pd.Series):
+        """
+        卡玛比率
+        等于(平均收益率-无风险利率)/最大回撤. 表明在单位回撤下获得的收益状况
+        数值越大, 表现越好; 反之, 数值越小, 表现越差
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        rfd = np.power(1 + RISK_FREE_INTEREST_RATE, 1 / 252) - 1
+        ret = data  # 收益率序列
+        if data.name == "净值":
+            ret = calculate_yield(data, method=method).dropna()
+        rete = np.average(ret)
+        return (rete - rfd) / max_drawdown(data)
+
+    def tail_ratio(data: pd.Series):
+        """
+        可以理解成衡量95分位收益与5分位的亏损的收益表现指标
+        数值越大, 表现越好
+        例如: tail ratio = 0.25, 5分位的亏损是95分位收益的四倍. 这样的策略在发生大额亏损的情况下很难在短时间内恢复
+        使用范围: 均值回归策略, 这类型策略的最大风险在于左侧的尾部风险, 单次的大额回撤需要很长的时间才能够恢复
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        ret = data  # 收益率序列
+        if data.name == "净值":
+            ret = calculate_yield(data, method=method).dropna()
+        return np.percentile(ret, 0.95) / np.percentile(ret, 0.05)
+
+    def gain_to_pain_ratio(data: pd.Series):
+        """
+        用于衡量资产组合正回报率总和与负回报率总和之间的比率
+        数值越大, 表现越好
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        ret = data  # 收益率序列
+        if data.name == "净值":
+            ret = calculate_yield(data, method=method).dropna()
+        return np.abs(np.sum(ret[ret > 0]) / np.sum(ret[ret < 0]))
+
+    def common_sense_ratio(data: pd.Series):
+        """
+        数值大于1: 策略盈利
+        数值小于1: 策略亏损.
+        使用范围: 均值回归策略, 趋势追踪策略.
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        return tail_ratio(data) * gain_to_pain_ratio(data)
+
+    def skewness(data: pd.Series):
+        """
+        偏度
+        标准正态分布偏度为0, 大于0表示收益分布与正态分布相比为正偏或右偏
+        正偏(): 算数平均数 > 中位数 > 众数
+        负偏(): 众数 > 中位数 > 算数平均数
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        ret = data  # 收益率序列
+        if data.name == "净值":
+            ret = calculate_yield(data, method=method).dropna()
+        rete = np.average(ret)
+        return len(ret) / ((len(ret) - 1) * (len(ret) - 2)) * np.sum(np.power((ret - rete) / np.std(ret), 3))
+
+    def kurtosis(data: pd.Series):
+        """
+        峰度
+        标准正态分布峰度接近0, 大于0表示收益的分布与正态分布相比较为陡峭
+        常峰度正态分布峰度等于3, 超额态分布峰度等于-3, 正峰度(尖峰)大于3, 负峰度(扁峰)小于3
+
+        Args:
+            data:
+
+        Returns:
+
+        """
+        ret = data  # 收益率序列
+        if data.name == "净值":
+            ret = calculate_yield(data, method=method).dropna()
+        rete = np.average(ret)
+        return len(ret) * (len(ret) + 1) / ((len(ret) - 1) * (len(ret) - 2) * (len(ret) - 3)) * np.sum(
+            np.power(((ret - rete) / np.std(ret)), 4))
+
+    def alpha(data: pd.DataFrame, reference: pd.DataFrame):
+        """
+        alpha
+        反映了资产组合获得的与基准波动无关的超额回报
+        数值越大, 表现越好
+
+        Args:
+            data:
+            reference:
+
+        Returns:
+
+        """
+        combined_temp = merge_with_benchmark(data, reference, method=method, how='inner')
+        ret = np.prod(combined_temp['收益率_x'] + 1) - 1
+        remt = np.prod(combined_temp['收益率_y'] + 1) - 1
+        rft = np.power(1 + RISK_FREE_INTEREST_RATE, len(combined_temp) / 252) - 1
+        return ret - (rft + beta(data, reference) * (remt - rft))
+
+    def beta(data: pd.DataFrame, reference: pd.DataFrame):
+        """
+        beta
+        用以度量某项资产或资产组合相对基准的波动性
+        数值大于1: 资产组合的波动性比基准波动大
+        数值等于1: 资产组合与基准同步变化
+        数值大于0小于1: 资产组合的波动性比基准小
+
+        Args:
+            data:
+            reference:
+
+        Returns:
+
+        """
+        combined_temp = merge_with_benchmark(data, reference, method=method, how='inner')
+        return np.cov(combined_temp['收益率_x'], combined_temp['收益率_y'])[0][1] / np.var(combined_temp['收益率_y'], ddof=1)
+
+    def treynor_ratio(data: pd.DataFrame, reference: pd.DataFrame):
+        """
+        特雷诺比率
+        是以基金收益的系统风险作为基金绩效调整的因子, 反映基金承担单位系统风险所获得的超额收益
+        数值越大, 承担单位系统风险所获得的超额收益越高
+
+        Args:
+            data:
+            reference:
+
+        Returns:
+
+        """
+        rfd = np.power(1 + RISK_FREE_INTEREST_RATE, 1 / 252) - 1
+        try:
+            ret = data['收益率']  # 收益率序列
+        except KeyError:
+            ret = calculate_yield(data['净值'], method=method).dropna()
+        rete = np.average(ret)
+        return (rete - rfd) / beta(data, reference)
+
+    def stability_of_time_series(data: pd.DataFrame, reference: pd.DataFrame):
+        """
+        累计对数收益对时间t的回归的R^2, 也称为决定系数
+        用于衡量基金与基准之间的变动同步程度
+        数值大小反映了趋势线的估计值与对应的实际数据之间的拟合程度, 拟合程度越高, 趋势线的可靠性就越高
+        R平方值是取值范围在0～1之间的数值, 数值越高, 变动同步程度越一致
+
+        Args:
+            data:
+            reference:
+
+        Returns:
+
+        """
+        combined_temp = merge_with_benchmark(data, reference, method=method, how='inner')
+        x = combined_temp['收益率_x']
+        y = combined_temp['收益率_y']
+        zx = (x - np.mean(x)) / np.std(x, ddof=1)
+        zy = (y - np.mean(y)) / np.std(y, ddof=1)
+        r = np.sum((zx * zy) / (len(x) - 1))
+        return np.square(r)
+
+    def information_ratio(data: pd.DataFrame, reference: pd.DataFrame):
+        """
+        信息比率
+        以马克维茨的均异模型为基础, 可以衡量基金的均异特性, 它表示单位主动风险所带来的超额收益
+        数值越大, 表现越好
+
+        Args:
+            data:
+            reference:
+
+        Returns:
+
+        """
+        combined_temp = merge_with_benchmark(data, reference, method=method, how='inner')
+        combined_temp['收益率_dif'] = combined_temp['收益率_x'] - combined_temp['收益率_y']
+        return np.mean(combined_temp['收益率_dif']) / np.sqrt(np.var(combined_temp['收益率_dif'], ddof=1))
+
+    def modigliani_ratio(data: pd.DataFrame, reference: pd.DataFrame):
+        """
+        夏普比率和信息比率的组合, 简称m2.
+        资产组合相对于市场无风险利率的超额收益与基准相对于市场无风险利率的超额收益之间的差异,
+        用于衡量资产组合相对于基准的超额收益.
+        数值越大, 表现越好
+
+        Args:
+            data:
+            reference:
+
+        Returns:
+
+        """
+        combined_temp = merge_with_benchmark(data, reference, method=method, how='inner')
+        rfd = np.power(1 + RISK_FREE_INTEREST_RATE, 1 / 252) - 1
+        combined_temp['data_yield_dif_to_rf'] = combined_temp['收益率_x'] - rfd
+        combined_temp['benchmark_yield_dif_to_rf'] = combined_temp['收益率_y'] - rfd
+        rft = np.power(1 + RISK_FREE_INTEREST_RATE, len(combined_temp) / 252) - 1
+        return np.mean(combined_temp['data_yield_dif_to_rf']) * np.sqrt(
+            np.var(combined_temp['benchmark_yield_dif_to_rf'], ddof=1)) / np.sqrt(
+            np.var(combined_temp['data_yield_dif_to_rf'], ddof=1)) + rft
+
+    print(f'{datetime.now()} | 信息 | 开始年度归因分析')
+    temp_net_worth = net_worth.set_index('日期')
+    annual_statistic = pd.DataFrame(
+        columns=['年度', '累计收益率', '年化收益率', '历史波动率', '年化波动率', '最大回撤', '下行风险', '年化下行风险', '最新夏普比率',
+                 '年化夏普比率', '最新索提诺比率', '年化索提诺比率', '卡玛比率', '盈亏率', 'Tail比率', 'CommonSense比率', '偏度',
+                 '峰度', ])
+    annual_statistic['年度'] = range(temp_net_worth.index[0].year, temp_net_worth.index[-1].year + 1)
+    annual_statistic.set_index('年度', inplace=True)
+    for year in annual_statistic.index:
+        data_set = temp_net_worth.loc[f'{year}-01-01': f'{year}-12-31']
+        annual_statistic.loc[year, '累计收益率'] = accumulated_return(data_set['收益率'])
+        annual_statistic.loc[year, '年化收益率'] = annual_return(data_set['收益率'])
+        annual_statistic.loc[year, '历史波动率'] = historical_volatility(data_set['收益率'])
+        annual_statistic.loc[year, '年化波动率'] = annual_volatility(data_set['收益率'])
+        annual_statistic.loc[year, '最大回撤'] = max_drawdown(data_set['净值'])  # 这里用对数收益率可能导致回撤大于100%, 可以转化但没必要
+        annual_statistic.loc[year, '下行风险'] = downward_risk(data_set['收益率'])
+        annual_statistic.loc[year, '年化下行风险'] = annual_downward_risk(data_set['收益率'])
+        annual_statistic.loc[year, '最新夏普比率'] = historical_sharpe_ratio(data_set['收益率'])
+        annual_statistic.loc[year, '年化夏普比率'] = annual_sharpe_ratio(data_set['收益率'])
+        annual_statistic.loc[year, '最新索提诺比率'] = historical_sortino_ratio(data_set['收益率'])
+        annual_statistic.loc[year, '年化索提诺比率'] = annual_sortino_ratio(data_set['收益率'])
+        annual_statistic.loc[year, '卡玛比率'] = calmar_ratio(data_set['收益率'])
+        annual_statistic.loc[year, '盈亏率'] = gain_to_pain_ratio(data_set['收益率'])
+        annual_statistic.loc[year, 'Tail比率'] = tail_ratio(data_set['收益率'])
+        annual_statistic.loc[year, 'CommonSense比率'] = common_sense_ratio(data_set['收益率'])
+        annual_statistic.loc[year, '偏度'] = skewness(data_set['收益率'])
+        annual_statistic.loc[year, '峰度'] = kurtosis(data_set['收益率'])
+    if benchmark is not None:
+        for year in annual_statistic.index:
+            data_set = temp_net_worth.loc[f'{year}-01-01': f'{year}-12-31']
+            annual_statistic.loc[year, 'Alpha'] = alpha(data_set, benchmark)
+            annual_statistic.loc[year, 'Beta'] = beta(data_set, benchmark)
+            annual_statistic.loc[year, '特雷诺比率'] = treynor_ratio(data_set, benchmark)
+            annual_statistic.loc[year, 'R2'] = stability_of_time_series(data_set, benchmark)
+            annual_statistic.loc[year, '信息比率'] = information_ratio(infodata_set, benchmark)
+            annual_statistic.loc[year, 'M2'] = modigliani_ratio(data_set, benchmark)
+    annual_statistic.reset_index(inplace=True)
+    print(f'{datetime.now()} | 信息 | 已完成年度归因分析')
+    return annual_statistic
+
+
 def data_statistic(transaction_record, position_closed):
-    print(f'{datetime.now()} | 信息 | 开始数据统计')
+    print(f'{datetime.now()} | 信息 | 开始交易数据统计')
     statistic_by_contracts = pd.DataFrame(
         columns=['品种', '合约', '平仓盈亏', '净利润', '交易次数', '交易手数', '盈利次数',
                  '盈利手数', '交易成功率', '交易盈亏率', '均次盈亏', '均手盈亏', '最大盈利',
@@ -276,12 +776,14 @@ def data_statistic(transaction_record, position_closed):
         statistic_by_contracts['盈利次数'] / statistic_by_contracts['交易次数'], 4)
     statistic_by_contracts['交易盈亏率'] = round(
         statistic_by_contracts['盈利手数'] / statistic_by_contracts['交易手数'], 4)
-    statistic_by_contracts['均次盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易次数'], 2)
-    statistic_by_contracts['均手盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易手数'], 2)
+    statistic_by_contracts['均次盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易次数'],
+                                               2)
+    statistic_by_contracts['均手盈亏'] = round(statistic_by_contracts['平仓盈亏'] / statistic_by_contracts['交易手数'],
+                                               2)
     statistic_by_contracts['最大盈利'] = position_closed_group_by_contracts.apply(
-        lambda x: max(max(x['交易盈亏']), 0))
+        lambda x: max(max(x['交易盈亏']), 0.)).astype('float64')
     statistic_by_contracts['最大亏损'] = position_closed_group_by_contracts.apply(
-        lambda x: min(min(x['交易盈亏']), 0))
+        lambda x: min(min(x['交易盈亏']), 0.)).astype('float64')
     statistic_by_contracts['成交额'] = transaction_record.groupby('合约')['成交额'].sum().astype('float64')
     statistic_by_contracts = statistic_by_contracts.reset_index()
 
@@ -307,9 +809,9 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_categories['均手盈亏'] = round(
         statistic_by_categories['平仓盈亏'] / statistic_by_categories['交易手数'], 2)
     statistic_by_categories['最大盈利'] = contracts_analysis_group_by_categories.apply(
-        lambda x: max(max(x['最大盈利']), 0))
+        lambda x: max(max(x['最大盈利']), 0.)).astype('float64')
     statistic_by_categories['最大亏损'] = contracts_analysis_group_by_categories.apply(
-        lambda x: min(min(x['最大亏损']), 0))
+        lambda x: min(min(x['最大亏损']), 0.)).astype('float64')
     statistic_by_categories['成交额'] = contracts_analysis_group_by_categories['成交额'].sum()
     statistic_by_categories = statistic_by_categories.reset_index()
 
@@ -360,7 +862,7 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_trade_direction['净利润/最大亏损'] = round(
         abs(statistic_by_trade_direction['净利润'] / statistic_by_trade_direction['最大亏损']), 4)
     statistic_by_trade_direction = statistic_by_trade_direction.reset_index()
-    print(f'{datetime.now()} | 信息 | 已完成数据统计')
+    print(f'{datetime.now()} | 信息 | 已完成交易数据统计')
     return statistic_by_contracts, statistic_by_categories, statistic_by_trade_direction
 
 
@@ -556,13 +1058,14 @@ def excel_create_chart(excel_file):
 
 
 # -------------------------------------------------- 生成excel文件 开始 -------------------------------------------------
-def output_excel(net_worth, account, transaction_record, position_closed, contracts_analysis, categories_analysis,
-                 trade_direction_analysis, client_id=''):
+def output_excel(net_worth, annual_statistic, account, transaction_record, position_closed, contracts_analysis,
+                 categories_analysis, trade_direction_analysis, client_id=''):
     try:
         with pd.ExcelWriter(os.path.join(BASE_DIR, client_id + '交易统计.xlsx'),
                             mode='w',
                             engine="openpyxl") as writer:
             net_worth.to_excel(writer, sheet_name='账户净值', index=False)
+            annual_statistic.to_excel(writer, sheet_name='年度归因', index=False)
             account.to_excel(writer, sheet_name='账户统计', index=False)
             transaction_record.to_excel(writer, sheet_name='交易记录', index=False)
             position_closed.to_excel(writer, sheet_name='平仓明细', index=False)
@@ -604,10 +1107,11 @@ def main(argv):
     statement_list = read_statement_files(files_folder)
     client_id, account, transaction_record, position_closed = data_extract(statement_list, client_id=client_id)
     net_worth = net_worth_calc(account)
+    annual_statistic = annual_attribution_statistic(net_worth)
     contracts_analysis, categories_analysis, trade_direction_analysis = data_statistic(transaction_record,
                                                                                        position_closed)
-    output_excel(net_worth, account, transaction_record, position_closed, contracts_analysis, categories_analysis,
-                 trade_direction_analysis, client_id=client_id)
+    output_excel(net_worth, annual_statistic, account, transaction_record, position_closed, contracts_analysis,
+                 categories_analysis, trade_direction_analysis, client_id=client_id)
 
 
 if __name__ == '__main__':
