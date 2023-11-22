@@ -9,13 +9,13 @@ Tridro的量化工具集，方便程序化交易及交易分析工作
 ## 期货行情数据源API（新浪）（不进行更新）
   
 ## 期货结算单数据分析
-最近更新: 2023/8/4
-1. 重写数据提取流程的正则表达式，现在支持不同软件平台导出的结算单（包括博易大师/快期/文华财经等） 
-2. 基础数据更新，增加新品种代码碳酸锂LC和丁二烯橡胶BR
+最近更新: 2023/11/22
+1. Add annual attribution analysis / 增加年度归因分析功能
+2. Optimize the net worth process / 优化净值化流程
 ### 使用方式
 * 安装python，并安装所依赖库
 ``` {.sourceCode .bash}
-$ pip install pandas openpyxl
+$ pip install numpy pandas openpyxl
 ```
 * 直接运行或命令行运行，会在脚本同路径目录生成excel分析结果。
 ``` {.sourceCode .bash}
