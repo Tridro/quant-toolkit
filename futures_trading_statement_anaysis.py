@@ -108,7 +108,8 @@ def data_extract(source, client_id=''):
         client_id = regular_expression_search(source[0], r'^(客户号 Client ID)[：\s]*([0-9]+)').groups()[1]
     print(f'{datetime.now()} | 信息 | 开始客户号 {client_id} 的结算数据提取')
     account = pd.DataFrame(columns=['日期', '期初结存', '出入金', '平仓盈亏', '持仓盯市盈亏', '手续费', '期末结存',
-                                    '客户权益', '保证金占用', '风险度'])
+                                    '客户权益', '保证金占用', '可用资金', '风险度', '权利金收入', '权利金支出', '多头期权市值',
+                                    '空头期权市值', '市值权益'])
     transaction_record = pd.DataFrame(columns=['成交日期', '交易所', '品种', '合约', '买/卖', '投/保', '成交价', '手数',
                                                '成交额', '开/平', '手续费', '平仓盈亏', '权利金收支', '成交序号'])
     position_closed = pd.DataFrame(columns=['平仓日期', '交易所', '品种', '合约', '开仓日期', '买/卖', '手数', '开仓价',
@@ -152,7 +153,25 @@ def data_extract(source, client_id=''):
                                                       start=j).groups()[1]),
                         '客户权益': client_equity,
                         '保证金占用': margin_occupied,
-                        '风险度': margin_occupied / client_equity}
+                        '可用资金': float(
+                            regular_expression_search(source[i], r'(可用资金 Fund Avail\.)[：\s]*([0-9\.]+)',
+                                                      start=j).groups()[1]),
+                        '风险度': margin_occupied / client_equity,
+                        '权利金收入': float(
+                            regular_expression_search(source[i], r'(权利金收入 Premium received)[：\s]*([0-9\.]+)',
+                                                      start=j).groups()[1]),
+                        '权利金支出': float(
+                            regular_expression_search(source[i], r'(权利金支出 Premium paid)[：\s]*([0-9\.]+)',
+                                                      start=j).groups()[1]),
+                        '多头期权市值': float(
+                            regular_expression_search(source[i], r'(多头期权市值 Market value\(long\))[：\s]*([0-9\.]+)',
+                                                      start=j).groups()[1]),
+                        '空头期权市值': float(
+                            regular_expression_search(source[i], r'(空头期权市值 Market value\(short\))[：\s]*([0-9\.]+)',
+                                                      start=j).groups()[1]),
+                        '市值权益': float(
+                            regular_expression_search(source[i], r'(市值权益 Market value\(equity\))[：\s]*([0-9\.]+)',
+                                                      start=j).groups()[1])}
                 df = pd.DataFrame([data])
                 account = pd.concat([account, df], ignore_index=True)
             if re.match(r'\s*成交记录 Transaction Record', source[i][j]):
@@ -216,7 +235,7 @@ def data_extract(source, client_id=''):
                                 '平仓盈亏': float(row[14]) if is_new_version else float(row[11]),
                                 '权利金收支': float(row[15]) if is_new_version else float(row[12]),
                                 '交易盈亏': price_margin * lots * TRADING_UNIT[
-                                    re.sub(r'[^A-Za-z]', '', instrument).lower()],
+                                    re.findall(r'[A-Za-z]*[^0-9-]+', instrument)[0].lower()],
                                 '盈亏率': price_margin / open_price}
                         df = pd.DataFrame([data])
                         position_closed = pd.concat([position_closed, df], ignore_index=True)
@@ -282,20 +301,20 @@ def merge_with_benchmark(data, reference, method: Literal['log', 'pct'] = STATIS
 
 def net_worth_calc(account: pd.DataFrame, method: Literal['log', 'pct'] = STATISTIC_METHOD):
     print(f'{datetime.now()} | 信息 | 开始净值化处理')
-    net_worth = pd.DataFrame(columns=['日期', '总权益', '净值', '收益率', '份额', '份额变动'])
+    net_worth = pd.DataFrame(columns=['日期', '净权益', '净值', '收益率', '份额', '份额变动'])
     net_worth['日期'] = account['日期']
     df = pd.merge(account, net_worth, on=['日期'])
-    df['总权益'] = df['客户权益']
+    df['净权益'] = df['客户权益']
     df.loc[0, '份额'] = (df.iloc[0]['期初结存'] + df.iloc[0]['出入金']) / 1.0
     df.loc[0, '份额变动'] = df.iloc[0]['份额']
-    df.loc[0, '净值'] = df.iloc[0]['总权益'] / df.iloc[0]['份额']
+    df.loc[0, '净值'] = df.iloc[0]['净权益'] / df.iloc[0]['份额']
     for index in range(1, len(df.index)):
         if df.iloc[index]['出入金'] != 0:
-            df.loc[index, '净值'] = (df.iloc[index]['总权益'] - df.iloc[index]['出入金']) / df.iloc[index - 1]['份额']
+            df.loc[index, '净值'] = (df.iloc[index]['净权益'] - df.iloc[index]['出入金']) / df.iloc[index - 1]['份额']
             df.loc[index, '份额变动'] = df.iloc[index]['出入金'] / df.iloc[index]['净值']
             df.loc[index, '份额'] = df.iloc[index - 1]['份额'] + df.iloc[index]['份额变动']
         else:
-            df.loc[index, '净值'] = df.iloc[index]['总权益'] / df.iloc[index - 1]['份额']
+            df.loc[index, '净值'] = df.iloc[index]['净权益'] / df.iloc[index - 1]['份额']
             df.loc[index, '份额'] = df.iloc[index - 1]['份额']
     df['收益率'] = calculate_yield(df['净值'].astype('float64'), method=method)
     df.loc[0, '收益率'] = np.log(df.iloc[0]['净值']) if method == 'log' else df.iloc[0]['净值'] - 1.0
@@ -763,7 +782,12 @@ def data_statistic(transaction_record, position_closed):
     statistic_by_contracts['合约'] = position_closed_group_by_contracts.groups.keys()
     statistic_by_contracts = statistic_by_contracts.set_index('合约')
     for index in statistic_by_contracts.index:
-        statistic_by_contracts.loc[index]['品种'] = CONTRACT_CODE[re.sub(r'[^A-Za-z]', '', index).lower()]
+        matched_string = re.findall(r'[A-Za-z]*[^0-9-]+', index)
+        if len(matched_string) == 2:
+            statistic_by_contracts.loc[index][
+                '品种'] = f"{CONTRACT_CODE[matched_string[0].lower()]}{'看涨' if matched_string[1].lower() == 'c' else '看跌'}期权"
+        else:
+            statistic_by_contracts.loc[index]['品种'] = CONTRACT_CODE[matched_string[0].lower()]
     statistic_by_contracts['平仓盈亏'] = position_closed_group_by_contracts['交易盈亏'].sum().astype('float64')
     statistic_by_contracts['净利润'] = position_closed_group_by_contracts['交易盈亏'].sum().astype('float64') - \
                                        transaction_record.groupby('合约')['手续费'].sum().astype('float64')
