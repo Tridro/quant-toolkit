@@ -9,9 +9,9 @@ Tridro的量化工具集，方便程序化交易及交易分析工作
 ## 期货行情数据源API（新浪）（不进行更新）
   
 ## 期货结算单数据分析
-最近更新: 2023/11/22
-1. Add annual attribution analysis / 增加年度归因分析功能
-2. Optimize the net worth process / 优化净值化流程
+最近更新: 2023/12/28
+1. Add options value statistic / 增加期权价值统计
+2. Fix bugs / 修正了一些问题
 ### 使用方式
 * 安装python，并安装所依赖库
 ``` {.sourceCode .bash}
