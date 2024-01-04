@@ -373,7 +373,7 @@ def annual_attribution_statistic(net_worth: pd.DataFrame, benchmark: Optional[pd
         if data.name == "净值":
             ret = calculate_yield(data, method=method).dropna()
         rete = np.average(ret)
-        return np.sqrt(np.sum(np.square(ret - rete)) / (len(ret) - 1))  # 等价ret.std()
+        return np.sqrt(np.sum(np.square(ret - rete)) / (len(ret) - 1))  # 等价ret.std(ddof=1)
 
     def annual_volatility(data: pd.Series):
         """
@@ -590,7 +590,7 @@ def annual_attribution_statistic(net_worth: pd.DataFrame, benchmark: Optional[pd
         if data.name == "净值":
             ret = calculate_yield(data, method=method).dropna()
         rete = np.average(ret)
-        return len(ret) / ((len(ret) - 1) * (len(ret) - 2)) * np.sum(np.power((ret - rete) / np.std(ret), 3))
+        return np.mean(np.power(ret - rete, 3)) / np.power(np.std(ret, ddof=1), 3)
 
     def kurtosis(data: pd.Series):
         """
@@ -608,8 +608,7 @@ def annual_attribution_statistic(net_worth: pd.DataFrame, benchmark: Optional[pd
         if data.name == "净值":
             ret = calculate_yield(data, method=method).dropna()
         rete = np.average(ret)
-        return len(ret) * (len(ret) + 1) / ((len(ret) - 1) * (len(ret) - 2) * (len(ret) - 3)) * np.sum(
-            np.power(((ret - rete) / np.std(ret)), 4))
+        return np.mean(np.power(ret - rete, 4)) / np.power(np.mean(np.power(ret - rete, 2)), 2) - 3
 
     def alpha(data: pd.DataFrame, reference: pd.DataFrame):
         """
