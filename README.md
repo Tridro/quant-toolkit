@@ -10,8 +10,7 @@ Tridro的量化工具集，方便程序化交易及交易分析工作
   
 ## 期货结算单数据分析
 最近更新: 2023/12/28
-1. Add options value statistic / 增加期权价值统计
-2. Fix bugs / 修正了一些问题
+1. Fix bugs about skew and kurtosis function. 修改了峰度和偏度的函数计算问题
 ### 使用方式
 * 安装python，并安装所依赖库
 ``` {.sourceCode .bash}
