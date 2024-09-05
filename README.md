@@ -9,8 +9,8 @@ Tridro的量化工具集，方便程序化交易及交易分析工作
 ## 期货行情数据源API（新浪）（不进行更新）
   
 ## 期货结算单数据分析
-最近更新: 2023/12/28
-1. Fix bugs about skew and kurtosis function. 修改了峰度和偏度的函数计算问题
+最近更新: 2024/9/5
+1. Update basic data,  add a new commodity future code PR/ 基础数据更新，增加新品种代码瓶片PR
 ### 使用方式
 * 安装python，并安装所依赖库
 ``` {.sourceCode .bash}
