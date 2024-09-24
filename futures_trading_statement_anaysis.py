@@ -135,7 +135,7 @@ def data_extract(source, client_id=''):
                                                                   start=j).groups()[1])
                 data = {'日期': pd.to_datetime(statement_date),
                         '期初结存': float(
-                            regular_expression_search(source[i], r'(期初结存 Balance b/f)[：\s]*([0-9\.]+)',
+                            regular_expression_search(source[i], r'(期初结存 Balance [bB]/[fF])[：\s]*([0-9\.]+)',
                                                       start=j).groups()[1]),
                         '出入金': float(
                             regular_expression_search(source[i], r'(出 入 金 Deposit/Withdrawal)[：\s]*([-0-9\.]+)',
@@ -150,7 +150,7 @@ def data_extract(source, client_id=''):
                             regular_expression_search(source[i], r'(手 续 费 Commission)[：\s]*([0-9\.]+)',
                                                       start=j).groups()[1]),
                         '期末结存': float(
-                            regular_expression_search(source[i], r'(期末结存 Balance c/f)[：\s]*([0-9\.]+)',
+                            regular_expression_search(source[i], r'(期末结存 Balance [cC]/[fF])[：\s]*([0-9\.]+)',
                                                       start=j).groups()[1]),
                         '客户权益': client_equity,
                         '保证金占用': margin_occupied,
@@ -159,19 +159,19 @@ def data_extract(source, client_id=''):
                                                       start=j).groups()[1]),
                         '风险度': margin_occupied / client_equity,
                         '权利金收入': float(
-                            regular_expression_search(source[i], r'(权利金收入 Premium received)[：\s]*([0-9\.]+)',
+                            regular_expression_search(source[i], r'(权利金收入 Premium [rR]eceived)[：\s]*([0-9\.]+)',
                                                       start=j).groups()[1]),
                         '权利金支出': float(
-                            regular_expression_search(source[i], r'(权利金支出 Premium paid)[：\s]*([0-9\.]+)',
+                            regular_expression_search(source[i], r'(权利金支出 Premium [pP]aid)[：\s]*([0-9\.]+)',
                                                       start=j).groups()[1]),
                         '多头期权市值': float(
-                            regular_expression_search(source[i], r'(多头期权市值 Market value\(long\))[：\s]*([0-9\.]+)',
+                            regular_expression_search(source[i], r'(多头期权市值 Market [vV]alue\(long\))[：\s]*([0-9\.]+)',
                                                       start=j).groups()[1]),
                         '空头期权市值': float(
-                            regular_expression_search(source[i], r'(空头期权市值 Market value\(short\))[：\s]*([0-9\.]+)',
+                            regular_expression_search(source[i], r'(空头期权市值 Market [vV]alue\(short\))[：\s]*([0-9\.]+)',
                                                       start=j).groups()[1]),
                         '市值权益': float(
-                            regular_expression_search(source[i], r'(市值权益 Market value\(equity\))[：\s]*([0-9\.]+)',
+                            regular_expression_search(source[i], r'(市值权益 Market [vV]alue\(equity\))[：\s]*([0-9\.]+)',
                                                       start=j).groups()[1])}
                 df = pd.DataFrame([data])
                 account = pd.concat([account, df], ignore_index=True)
